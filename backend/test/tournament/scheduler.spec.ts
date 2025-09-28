@@ -3,10 +3,10 @@ import { TableBalancerService } from '../../src/tournament/table-balancer.servic
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
-import { Tournament } from '../../src/database/entities/tournament.entity';
 import { RebuyService } from '../../src/tournament/rebuy.service';
 import { PkoService } from '../../src/tournament/pko.service';
 import { icmRaw } from '@shared/utils/icm';
+import { createTestTable, createTestTournament } from './helpers';
 
 describe('TournamentScheduler', () => {
   it('schedules level up jobs', async () => {
@@ -103,11 +103,11 @@ describe('TournamentScheduler', () => {
       level: i + 1,
       durationMinutes: 1,
     }));
-    const tables: Table[] = Array.from({ length: 100 }, (_, i) => ({
-      id: `tbl${i}`,
-      seats: [],
-      tournament: { id: 't1' } as Tournament,
-    })) as Table[];
+    const tournament = createTestTournament({ id: 't1' });
+    const tables: Table[] = Array.from({ length: 100 }, (_, i) =>
+      createTestTable(`tbl${i}`, tournament),
+    );
+    tournament.tables = tables;
 
     const serviceDeps = {
       tournaments: { find: jest.fn(), findOne: jest.fn(), save: jest.fn() } as any,

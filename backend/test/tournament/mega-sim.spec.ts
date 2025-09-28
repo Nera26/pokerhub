@@ -7,7 +7,7 @@ import { PkoService } from '../../src/tournament/pko.service';
 import { calculateIcmPayouts } from '@shared/utils/icm';
 import { Seat } from '../../src/database/entities/seat.entity';
 import { Table } from '../../src/database/entities/table.entity';
-import { Tournament } from '../../src/database/entities/tournament.entity';
+import { createTestTable, createTestTournament } from './helpers';
 
 async function runSimulation(players: number, checkIcm = false): Promise<number> {
   const start = Date.now();
@@ -20,11 +20,11 @@ async function runSimulation(players: number, checkIcm = false): Promise<number>
   };
 
   const tableCount = Math.max(1, Math.ceil(players / 100));
-  const tables: Table[] = Array.from({ length: tableCount }, (_, i) => ({
-    id: `tbl${i}`,
-    seats: [] as Seat[],
-    tournament: { id: 't1' } as Tournament,
-  })) as Table[];
+  const tournament = createTestTournament({ id: 't1' });
+  const tables: Table[] = Array.from({ length: tableCount }, (_, i) =>
+    createTestTable(`tbl${i}`, tournament),
+  );
+  tournament.tables = tables;
 
   let seatId = 0;
   for (let i = 0; i < players; i++) {

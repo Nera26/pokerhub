@@ -2,19 +2,23 @@ import { TableBalancerService } from '../../src/tournament/table-balancer.servic
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
-import {
-  Tournament,
-  TournamentState,
-} from '../../src/database/entities/tournament.entity';
+import { TournamentState } from '../../src/database/entities/tournament.entity';
 import { Repository } from 'typeorm';
-import { createSeatRepo, createTournamentRepo } from './helpers';
+import {
+  createSeatRepo,
+  createTestTable,
+  createTestTournament,
+  createTournamentRepo,
+} from './helpers';
 
 describe('TableBalancerService lastMovedHand persistence', () => {
   it('skips moves for players who recently moved even after restart', async () => {
+    const tournament = createTestTournament({ id: 't1', state: TournamentState.RUNNING });
     const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      createTestTable('tbl1', tournament),
+      createTestTable('tbl2', tournament),
     ];
+    tournament.tables = tables;
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
@@ -40,17 +44,7 @@ describe('TableBalancerService lastMovedHand persistence', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = { find: jest.fn(async () => tables) } as any;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
     const service = new TournamentService(

@@ -2,27 +2,28 @@ import { TableBalancerService } from '../../src/tournament/table-balancer.servic
 import { TournamentService } from '../../src/tournament/tournament.service';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
-import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
+import type { Tournament } from '../../src/database/entities/tournament.entity';
+import { TournamentState } from '../../src/database/entities/tournament.entity';
 import { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
 import { createInMemoryRedis } from '../utils/mock-redis';
 import {
   createSeatRepo,
   createTestTable,
+  createTestTournament,
   createTournamentRepo,
   createTournamentServiceInstance,
 } from './helpers';
 
 function createTournamentContext() {
-  const tournament = {
+  const tournament = createTestTournament({
     id: 't1',
     title: 'Test',
     buyIn: 0,
     prizePool: 0,
     maxPlayers: 1000,
     state: TournamentState.RUNNING,
-    tables: [] as Table[],
-  } as Tournament;
+  });
   const tables = [
     createTestTable('tbl1', tournament),
     createTestTable('tbl2', tournament),

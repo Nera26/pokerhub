@@ -1,11 +1,13 @@
 import { TournamentService } from '../src/tournament/tournament.service';
-import { Tournament, TournamentState } from '../src/database/entities/tournament.entity';
+import type { Tournament } from '../src/database/entities/tournament.entity';
+import { TournamentState } from '../src/database/entities/tournament.entity';
 import { Seat } from '../src/database/entities/seat.entity';
 import { Table } from '../src/database/entities/table.entity';
 import { Repository } from 'typeorm';
 import type { WalletService } from '../src/wallet/wallet.service';
 import {
   createTestTable,
+  createTestTournament,
   createTournamentRepo,
   createTournamentServiceInstance,
 } from './tournament/helpers';
@@ -18,18 +20,15 @@ describe('TournamentService.join rollback', () => {
   let wallet: { reserve: jest.Mock; rollback: jest.Mock };
 
   beforeEach(() => {
-    const tournament = {
+    const tournament = createTestTournament({
       id: 't1',
       title: 'Daily Free Roll',
       buyIn: 100,
       prizePool: 1000,
-      currency: 'USD',
       maxPlayers: 100,
       state: TournamentState.REG_OPEN,
       gameType: 'texas',
-      tables: [],
-      details: [],
-    } as Tournament;
+    });
 
     const table = createTestTable('tbl1', tournament);
     tournament.tables = [table];

@@ -3,18 +3,23 @@ import { TournamentService } from '../../src/tournament/tournament.service';
 import { Repository } from 'typeorm';
 import { Table } from '../../src/database/entities/table.entity';
 import { Seat } from '../../src/database/entities/seat.entity';
-import { Tournament, TournamentState } from '../../src/database/entities/tournament.entity';
+import { TournamentState } from '../../src/database/entities/tournament.entity';
 import { createTablesRepository } from './test-utils';
 import { createInMemoryRedis } from '../utils/mock-redis';
-import { createSeatRepo, createTournamentRepo } from './helpers';
+import {
+  createSeatRepo,
+  createTestTable,
+  createTestTournament,
+  createTournamentRepo,
+} from './helpers';
 
 describe('TableBalancerService integration', () => {
   it('balances 120 entrants across 10 tables', async () => {
-    const tables: Table[] = Array.from({ length: 10 }, (_, i) => ({
-      id: `tbl${i}`,
-      seats: [],
-      tournament: { id: 't1' } as Tournament,
-    })) as Table[];
+    const tournament = createTestTournament({ id: 't1', state: TournamentState.RUNNING });
+    const tables: Table[] = Array.from({ length: 10 }, (_, i) =>
+      createTestTable(`tbl${i}`, tournament),
+    );
+    tournament.tables = tables;
     const distribution = [30, 10, 10, 10, 10, 10, 10, 10, 10, 10];
     let seatId = 0;
     distribution.forEach((count, idx) => {
@@ -33,17 +38,7 @@ describe('TableBalancerService integration', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = createTablesRepository(tables) as Repository<Table>;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
     const service = new TournamentService(
@@ -67,10 +62,12 @@ describe('TableBalancerService integration', () => {
   });
 
   it('does not move the same player twice within the window', async () => {
+    const tournament = createTestTournament({ id: 't1', state: TournamentState.RUNNING });
     const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      createTestTable('tbl1', tournament),
+      createTestTable('tbl2', tournament),
     ];
+    tournament.tables = tables;
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
@@ -96,17 +93,7 @@ describe('TableBalancerService integration', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = createTablesRepository(tables) as Repository<Table>;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
     const service = new TournamentService(
@@ -144,10 +131,12 @@ describe('TableBalancerService integration', () => {
   });
 
   it('persists avoidance window across service restart', async () => {
+    const tournament = createTestTournament({ id: 't1', state: TournamentState.RUNNING });
     const tables: Table[] = [
-      { id: 'tbl1', seats: [], tournament: { id: 't1' } as Tournament } as Table,
-      { id: 'tbl2', seats: [], tournament: { id: 't1' } as Tournament } as Table,
+      createTestTable('tbl1', tournament),
+      createTestTable('tbl2', tournament),
     ];
+    tournament.tables = tables;
     const players1 = ['p1', 'p2', 'p3', 'p4'];
     const players2 = ['p5', 'p6'];
     let seatId = 0;
@@ -173,17 +162,7 @@ describe('TableBalancerService integration', () => {
     });
     const seatsRepo = createSeatRepo(tables);
     const tablesRepo = createTablesRepository(tables) as Repository<Table>;
-    const tournamentsRepo = createTournamentRepo([
-      {
-        id: 't1',
-        title: 'Test',
-        buyIn: 0,
-        prizePool: 0,
-        maxPlayers: 1000,
-        state: TournamentState.RUNNING,
-        tables,
-      } as Tournament,
-    ]);
+    const tournamentsRepo = createTournamentRepo([tournament]);
     const scheduler: any = {};
     const rooms: any = { get: jest.fn() };
     const service = new TournamentService(
