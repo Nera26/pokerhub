@@ -73,19 +73,44 @@ function setupMetrics() {
     exportIntervalMillis: 60_000,
   });
   const provider = new MeterProvider();
-  provider.addMetricReader(reader);
+  const providerWithRegistration = provider as MeterProvider & {
+    addMetricReader?: (reader: PeriodicExportingMetricReader) => void;
+    registerMetricReader?: (reader: PeriodicExportingMetricReader) => void;
+  };
+  if (typeof providerWithRegistration.addMetricReader === 'function') {
+    providerWithRegistration.addMetricReader(reader);
+  } else if (typeof providerWithRegistration.registerMetricReader === 'function') {
+    providerWithRegistration.registerMetricReader(reader);
+  } else {
+    // Fallback for older SDKs where the reader list is internal.
+    (provider as unknown as { metricReaders?: PeriodicExportingMetricReader[] }).metricReaders ??=
+      [];
+    (provider as unknown as { metricReaders: PeriodicExportingMetricReader[] }).metricReaders.push(
+      reader,
+    );
+  }
   metrics.setGlobalMeterProvider(provider);
   return { exporter, provider };
 }
 
 function readCounter(exporter: InMemoryMetricExporter, name: string) {
-  return exporter
-    .getMetrics()
-    .flatMap((r) => r.scopeMetrics)
-    .flatMap((s) => s.metrics)
-    .filter((m) => m.descriptor.name === name)
-    .flatMap((m) => m.dataPoints)
-    .reduce((sum, dp: any) => sum + Number(dp.value ?? 0), 0);
+  let sum = 0;
+  for (const resourceMetric of exporter.getMetrics()) {
+    for (const scopeMetric of resourceMetric.scopeMetrics ?? []) {
+      for (const metric of scopeMetric.metrics ?? []) {
+        if (metric.descriptor?.name !== name) {
+          continue;
+        }
+        const dataPoints = Array.isArray(metric.dataPoints)
+          ? metric.dataPoints
+          : Array.from(metric.dataPoints ?? []);
+        for (const point of dataPoints as Array<{ value?: number }>) {
+          sum += Number(point.value ?? 0);
+        }
+      }
+    }
+  }
+  return sum;
 }
 
 describe('GameGateway rate-limit fuzz', () => {
