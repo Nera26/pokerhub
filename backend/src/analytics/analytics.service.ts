@@ -35,7 +35,7 @@ import { EtlService } from './etl.service';
 import { QueryFailedError, Repository } from 'typeorm';
 import { AuditLogTypeClass } from './audit-log-type-class.entity';
 import { AuditLogTypeClassDefault } from './audit-log-type-class-default.entity';
-import { logBootstrapNotice } from '../common/logging.utils';
+import { logBootstrapError, logBootstrapNotice } from '../common/logging.utils';
 
 interface AuditLog {
   id: string;
@@ -237,13 +237,15 @@ const parseEvent = <E extends EventName>(eventName: E, data: unknown): Events[E]
 
 @Injectable()
 export class AnalyticsService implements OnModuleInit {
-  private readonly client: ClickHouseClient | null;
+  private client: ClickHouseClient | null;
   private readonly logger = new Logger(AnalyticsService.name);
   private readonly collusionSessionsKey = 'collusion:sessions';
   private readonly collusionTransfersKey = 'collusion:transfers';
   private readonly collusionEventsKey = 'collusion:events';
   private auditLogSchemaReady: Promise<void> | null = null;
   private defaultLogTypeClassCache: Map<string, string> | null = null;
+  private clickhouseDisabled = false;
+  private clickhouseNoticeLogged = false;
 
   constructor(
     config: ConfigService,
@@ -260,6 +262,106 @@ export class AnalyticsService implements OnModuleInit {
 
     this.scheduleStakeAggregates();
     this.scheduleEngagementMetrics();
+  }
+
+  private hasClickHouse(): boolean {
+    return Boolean(this.client) && !this.clickhouseDisabled;
+  }
+
+  private async withClickHouse<T>(
+    context: string,
+    fallback: T,
+    operation: (client: ClickHouseClient) => Promise<T>,
+  ): Promise<T> {
+    if (!this.hasClickHouse()) {
+      if (!this.clickhouseNoticeLogged) {
+        logBootstrapNotice(this.logger, 'No ClickHouse client configured');
+        this.clickhouseNoticeLogged = true;
+      }
+      return fallback;
+    }
+
+    try {
+      return await operation(this.client!);
+    } catch (error) {
+      if (this.isClickHouseUnavailable(error)) {
+        await this.disableClickHouse(error, context);
+        return fallback;
+      }
+      throw error;
+    }
+  }
+
+  private isClickHouseUnavailable(error: unknown, seen: Set<unknown> = new Set()): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    if (seen.has(error)) {
+      return false;
+    }
+    seen.add(error);
+
+    const err = error as NodeJS.ErrnoException & { cause?: unknown; errors?: unknown[] };
+    const offlineCodes = new Set([
+      'EAI_AGAIN',
+      'ENOTFOUND',
+      'ECONNREFUSED',
+      'ECONNRESET',
+      'ETIMEDOUT',
+      'ECONNABORTED',
+      'EHOSTUNREACH',
+    ]);
+
+    if (typeof err.code === 'string' && offlineCodes.has(err.code)) {
+      return true;
+    }
+
+    if (error instanceof Error) {
+      const message = error.message ?? '';
+      if (/getaddrinfo/i.test(message) || /ECONNREFUSED/i.test(message) || /ENOTFOUND/i.test(message)) {
+        return true;
+      }
+    }
+
+    if (err.cause && this.isClickHouseUnavailable(err.cause, seen)) {
+      return true;
+    }
+
+    if (Array.isArray(err.errors)) {
+      return err.errors.some((nested) => this.isClickHouseUnavailable(nested, seen));
+    }
+
+    return false;
+  }
+
+  private async disableClickHouse(error: unknown, context: string): Promise<void> {
+    if (this.clickhouseDisabled) {
+      return;
+    }
+
+    this.clickhouseDisabled = true;
+    this.clickhouseNoticeLogged = true;
+    const client = this.client;
+    this.client = null;
+
+    logBootstrapError(
+      this.logger,
+      `ClickHouse ${context} failed; disabling ClickHouse integration and continuing without analytics persistence.`,
+      error,
+    );
+
+    if (client) {
+      try {
+        await client.close();
+      } catch (closeError) {
+        this.logger.warn('Failed to close ClickHouse client after disabling analytics integration.', closeError as Error);
+      }
+    }
+  }
+
+  private describeSql(sql: string, maxLength = 120): string {
+    return sql.length > maxLength ? `${sql.slice(0, maxLength - 3)}...` : sql;
   }
 
   async onModuleInit(): Promise<void> {
@@ -318,16 +420,22 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async getAuditLogTypes(): Promise<string[]> {
-    if (!this.client) return [];
-    await this.query(
-      'CREATE TABLE IF NOT EXISTS audit_log_types (id UInt32, name String) ENGINE = MergeTree() ORDER BY id',
+    return this.withClickHouse<string[]>(
+      'fetch audit_log_types',
+      [],
+      async (client) => {
+        await client.command({
+          query:
+            'CREATE TABLE IF NOT EXISTS audit_log_types (id UInt32, name String) ENGINE = MergeTree() ORDER BY id',
+        });
+        const res = await client.query({
+          query: 'SELECT name FROM audit_log_types ORDER BY id',
+          format: 'JSONEachRow',
+        });
+        const rows = (await res.json()) as { name: string }[];
+        return rows.map((r) => r.name);
+      },
     );
-    const res = await this.client.query({
-      query: 'SELECT name FROM audit_log_types ORDER BY id',
-      format: 'JSONEachRow',
-    });
-    const rows = (await res.json()) as { name: string }[];
-    return rows.map((r) => r.name);
   }
 
   async getDefaultLogTypeClasses(): Promise<Record<string, string>> {
@@ -460,64 +568,71 @@ export class AnalyticsService implements OnModuleInit {
     limit?: number;
   }): Promise<{ logs: AuditLog[]; total: number }> {
     const offset = (page - 1) * limit;
-    if (this.client) {
-      await this.ensureAuditLogTable();
-      const where: string[] = [];
-      const params: Record<string, any> = { limit, offset };
-      if (search) {
-        where.push(
-          '(description ILIKE {search:String} OR user ILIKE {search:String} OR type ILIKE {search:String} OR ip ILIKE {search:String})',
-        );
-        params.search = `%${search}%`;
-      }
-      if (type) {
-        where.push('type = {type:String}');
-        params.type = type;
-      }
-      if (user) {
-        where.push('user = {user:String}');
-        params.user = user;
-      }
-      if (dateFrom) {
-        where.push('ts >= parseDateTimeBestEffort({dateFrom:String})');
-        params.dateFrom = dateFrom;
-      }
-      if (dateTo) {
-        where.push('ts <= parseDateTimeBestEffort({dateTo:String})');
-        params.dateTo = dateTo;
-      }
-      const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
-      const res = await this.client.query({
-        query: `SELECT id, ts AS timestamp, type, description, user, ip, reviewed, reviewedBy, reviewedAt FROM audit_log ${whereClause} ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
-        query_params: params,
-        format: 'JSONEachRow',
-      });
-      const rows = (await res.json()) as Array<
-        {
-          id: string;
-          timestamp: string;
-          type: string;
-          description: string;
-          user: string | null;
-          ip: string | null;
-          reviewed: boolean | 0 | 1;
-          reviewedBy: string | null;
-          reviewedAt: string | null;
+    const clickhouseResult = await this.withClickHouse<{ logs: AuditLog[]; total: number } | null>(
+      'query audit_log',
+      null,
+      async (client) => {
+        await this.ensureAuditLogTable();
+        const where: string[] = [];
+        const params: Record<string, any> = { limit, offset };
+        if (search) {
+          where.push(
+            '(description ILIKE {search:String} OR user ILIKE {search:String} OR type ILIKE {search:String} OR ip ILIKE {search:String})',
+          );
+          params.search = `%${search}%`;
         }
-      >;
-      const logs = rows.map((row) =>
-        this.applyAuditLogDefaults({
-          ...row,
-          reviewed: Boolean(row.reviewed),
-        }),
-      );
-      const countRes = await this.client.query({
-        query: `SELECT count() AS total FROM audit_log ${whereClause}`,
-        query_params: params,
-        format: 'JSONEachRow',
-      });
-      const [{ total }] = (await countRes.json()) as { total: string }[];
-      return { logs, total: Number(total) };
+        if (type) {
+          where.push('type = {type:String}');
+          params.type = type;
+        }
+        if (user) {
+          where.push('user = {user:String}');
+          params.user = user;
+        }
+        if (dateFrom) {
+          where.push('ts >= parseDateTimeBestEffort({dateFrom:String})');
+          params.dateFrom = dateFrom;
+        }
+        if (dateTo) {
+          where.push('ts <= parseDateTimeBestEffort({dateTo:String})');
+          params.dateTo = dateTo;
+        }
+        const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+        const res = await client.query({
+          query: `SELECT id, ts AS timestamp, type, description, user, ip, reviewed, reviewedBy, reviewedAt FROM audit_log ${whereClause} ORDER BY ts DESC LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
+          query_params: params,
+          format: 'JSONEachRow',
+        });
+        const rows = (await res.json()) as Array<
+          {
+            id: string;
+            timestamp: string;
+            type: string;
+            description: string;
+            user: string | null;
+            ip: string | null;
+            reviewed: boolean | 0 | 1;
+            reviewedBy: string | null;
+            reviewedAt: string | null;
+          }
+        >;
+        const logs = rows.map((row) =>
+          this.applyAuditLogDefaults({
+            ...row,
+            reviewed: Boolean(row.reviewed),
+          }),
+        );
+        const countRes = await client.query({
+          query: `SELECT count() AS total FROM audit_log ${whereClause}`,
+          query_params: params,
+          format: 'JSONEachRow',
+        });
+        const [{ total }] = (await countRes.json()) as { total: string }[];
+        return { logs, total: Number(total) };
+      },
+    );
+    if (clickhouseResult) {
+      return clickhouseResult;
     }
 
     const entries = await this.redis.lrange('audit-logs', 0, -1);
@@ -554,18 +669,25 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async getAuditSummary(): Promise<AuditSummary> {
-    if (this.client) {
-      const res = await this.client.query({
-        query:
-          "SELECT count() AS total, countIf(type='Error') AS errors, countIf(type='Login') AS logins FROM audit_log",
-        format: 'JSONEachRow',
-      });
-      const [row] = (await res.json()) as AuditSummaryRow[];
-      return {
-        total: Number(row.total) || 0,
-        errors: Number(row.errors) || 0,
-        logins: Number(row.logins) || 0,
-      };
+    const clickhouseSummary = await this.withClickHouse<AuditSummary | null>(
+      'summarize audit_log',
+      null,
+      async (client) => {
+        const res = await client.query({
+          query:
+            "SELECT count() AS total, countIf(type='Error') AS errors, countIf(type='Login') AS logins FROM audit_log",
+          format: 'JSONEachRow',
+        });
+        const [row] = (await res.json()) as AuditSummaryRow[];
+        return {
+          total: Number(row.total) || 0,
+          errors: Number(row.errors) || 0,
+          logins: Number(row.logins) || 0,
+        };
+      },
+    );
+    if (clickhouseSummary) {
+      return clickhouseSummary;
     }
 
     const entries = await this.redis.lrange('audit-logs', 0, -1);
@@ -681,51 +803,63 @@ export class AnalyticsService implements OnModuleInit {
     });
     await this.redis.lpush('audit-logs', JSON.stringify(log));
     await this.redis.ltrim('audit-logs', 0, 999);
-    if (this.client) {
-      await this.ensureAuditLogTable();
-      await this.client.insert({
-        table: 'audit_log',
-        values: [log],
-        format: 'JSONEachRow',
-      });
-    }
+    await this.withClickHouse<void>(
+      'insert audit_log',
+      undefined,
+      async (client) => {
+        await this.ensureAuditLogTable();
+        await client.insert({
+          table: 'audit_log',
+          values: [log],
+          format: 'JSONEachRow',
+        });
+      },
+    );
   }
 
   async markAuditLogReviewed(id: string, adminId: string): Promise<AuditLog> {
     const reviewedAt = new Date().toISOString();
     let updated: AuditLog | null = null;
 
-    if (this.client) {
-      await this.ensureAuditLogTable();
-      const idExpr = this.formatAuditLogId(id);
-      await this.query(
-        `ALTER TABLE audit_log UPDATE reviewed = 1, reviewedBy = ${JSON.stringify(adminId)}, reviewedAt = parseDateTimeBestEffort(${JSON.stringify(
-          reviewedAt,
-        )}) WHERE id = ${idExpr}`,
-      );
-      const res = await this.client.query({
-        query: `SELECT id, ts AS timestamp, type, description, user, ip, reviewed, reviewedBy, reviewedAt FROM audit_log WHERE id = ${idExpr} LIMIT 1`,
-        format: 'JSONEachRow',
-      });
-      const [row] = (await res.json()) as Array<
-        {
-          id: string;
-          timestamp: string;
-          type: string;
-          description: string;
-          user: string | null;
-          ip: string | null;
-          reviewed: boolean | 0 | 1;
-          reviewedBy: string | null;
-          reviewedAt: string | null;
+    const clickhouseLog = await this.withClickHouse<AuditLog | null>(
+      `update audit_log ${id}`,
+      null,
+      async (client) => {
+        await this.ensureAuditLogTable();
+        const idExpr = this.formatAuditLogId(id);
+        await client.command({
+          query: `ALTER TABLE audit_log UPDATE reviewed = 1, reviewedBy = ${JSON.stringify(
+            adminId,
+          )}, reviewedAt = parseDateTimeBestEffort(${JSON.stringify(reviewedAt)}) WHERE id = ${idExpr}`,
+        });
+        const res = await client.query({
+          query: `SELECT id, ts AS timestamp, type, description, user, ip, reviewed, reviewedBy, reviewedAt FROM audit_log WHERE id = ${idExpr} LIMIT 1`,
+          format: 'JSONEachRow',
+        });
+        const [row] = (await res.json()) as Array<
+          {
+            id: string;
+            timestamp: string;
+            type: string;
+            description: string;
+            user: string | null;
+            ip: string | null;
+            reviewed: boolean | 0 | 1;
+            reviewedBy: string | null;
+            reviewedAt: string | null;
+          }
+        >;
+        if (!row) {
+          return null;
         }
-      >;
-      if (row) {
-        updated = this.applyAuditLogDefaults({
+        return this.applyAuditLogDefaults({
           ...row,
           reviewed: Boolean(row.reviewed),
         });
-      }
+      },
+    );
+    if (clickhouseLog) {
+      updated = clickhouseLog;
     }
 
     const entries = await this.redis.lrange('audit-logs', 0, -1);
@@ -760,19 +894,21 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async ingest<T extends Record<string, unknown>>(table: string, data: T) {
-    if (!this.client) {
-      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
-      return;
-    }
-    await this.client.insert({
-      table,
-      values: [data],
-      format: 'JSONEachRow',
-    });
+    await this.withClickHouse<void>(
+      `insert into ${table}`,
+      undefined,
+      async (client) => {
+        await client.insert({
+          table,
+          values: [data],
+          format: 'JSONEachRow',
+        });
+      },
+    );
   }
 
   private async ensureAuditLogTable(): Promise<void> {
-    if (!this.client) return;
+    if (!this.hasClickHouse()) return;
     if (!this.auditLogSchemaReady) {
       this.auditLogSchemaReady = (async () => {
         const createSql =
@@ -1089,24 +1225,28 @@ export class AnalyticsService implements OnModuleInit {
     return results;
   }
 
-  async query(sql: string) {
-    if (!this.client) {
-      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
-      return;
-    }
-    await this.client.command({ query: sql });
+  async query(sql: string): Promise<void> {
+    await this.withClickHouse<void>(
+      `command ${this.describeSql(sql)}`,
+      undefined,
+      async (client) => {
+        await client.command({ query: sql });
+      },
+    );
   }
 
   async select<T = Record<string, unknown>>(sql: string): Promise<T[]> {
-    if (!this.client) {
-      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
-      return [];
-    }
-    const result = await this.client.query({
-      query: sql,
-      format: 'JSONEachRow',
-    });
-    return (await result.json()) as T[];
+    return this.withClickHouse<T[]>(
+      `query ${this.describeSql(sql)}`,
+      [],
+      async (client) => {
+        const result = await client.query({
+          query: sql,
+          format: 'JSONEachRow',
+        });
+        return (await result.json()) as T[];
+      },
+    );
   }
 
   private async writeEngagementSnapshot(
@@ -1140,30 +1280,60 @@ export class AnalyticsService implements OnModuleInit {
     let regs = 0;
     let deps = 0;
     let conversion = 0;
-    if (this.client) {
-      const createTable =
-        'CREATE TABLE IF NOT EXISTS engagement_metrics (date Date, dau UInt64, mau UInt64, reg_to_dep Float64) ENGINE = MergeTree() ORDER BY date';
-      await this.query(createTable);
-      const dauSql = `SELECT uniq(userId) AS dau FROM auth_login WHERE ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
-      const dauRow = await this.select<{ dau: number }>(dauSql);
-      const mauFrom = new Date(to.getTime() - 30 * oneDay);
-      const mauSql = `SELECT uniq(userId) AS mau FROM auth_login WHERE ts >= toDateTime('${mauFrom.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
-      const mauRow = await this.select<{ mau: number }>(mauSql);
-      const regSql = `SELECT uniq(userId) AS regs FROM auth_login WHERE ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
-      const regRow = await this.select<{ regs: number }>(regSql);
-      const depSql = `SELECT uniq(accountId) AS deps FROM wallet_credit WHERE refType = 'deposit' AND ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`;
-      const depRow = await this.select<{ deps: number }>(depSql);
-      dau = dauRow[0]?.dau ?? 0;
-      mau = mauRow[0]?.mau ?? 0;
-      regs = regRow[0]?.regs ?? 0;
-      deps = depRow[0]?.deps ?? 0;
-      conversion = regs > 0 ? deps / regs : 0;
-      await this.query(
-        `ALTER TABLE engagement_metrics DELETE WHERE date = '${dateStr}'`,
-      );
-      await this.query(
-        `INSERT INTO engagement_metrics (date, dau, mau, reg_to_dep) VALUES ('${dateStr}', ${dau}, ${mau}, ${conversion})`,
-      );
+    const clickhouseMetrics = await this.withClickHouse<
+      { dau: number; mau: number; regs: number; deps: number; conversion: number } | null
+    >(
+      'rebuild engagement metrics',
+      null,
+      async (client) => {
+        await client.command({
+          query:
+            'CREATE TABLE IF NOT EXISTS engagement_metrics (date Date, dau UInt64, mau UInt64, reg_to_dep Float64) ENGINE = MergeTree() ORDER BY date',
+        });
+        const runSingle = async <T extends Record<string, unknown>>(sql: string): Promise<T | null> => {
+          const result = await client.query({
+            query: sql,
+            format: 'JSONEachRow',
+          });
+          const rows = (await result.json()) as T[];
+          return rows[0] ?? null;
+        };
+        const dauRow = await runSingle<{ dau: number }>(
+          `SELECT uniq(userId) AS dau FROM auth_login WHERE ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`,
+        );
+        const mauFrom = new Date(to.getTime() - 30 * oneDay);
+        const mauRow = await runSingle<{ mau: number }>(
+          `SELECT uniq(userId) AS mau FROM auth_login WHERE ts >= toDateTime('${mauFrom.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`,
+        );
+        const regRow = await runSingle<{ regs: number }>(
+          `SELECT uniq(userId) AS regs FROM auth_login WHERE ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`,
+        );
+        const depRow = await runSingle<{ deps: number }>(
+          `SELECT uniq(accountId) AS deps FROM wallet_credit WHERE refType = 'deposit' AND ts >= toDateTime('${from.toISOString()}') AND ts < toDateTime('${to.toISOString()}')`,
+        );
+        const dauValue = Number(dauRow?.dau ?? 0);
+        const mauValue = Number(mauRow?.mau ?? 0);
+        const regsValue = Number(regRow?.regs ?? 0);
+        const depsValue = Number(depRow?.deps ?? 0);
+        const conversionValue = regsValue > 0 ? depsValue / regsValue : 0;
+        await client.command({
+          query: `ALTER TABLE engagement_metrics DELETE WHERE date = '${dateStr}'`,
+        });
+        await client.command({
+          query: `INSERT INTO engagement_metrics (date, dau, mau, reg_to_dep) VALUES ('${dateStr}', ${dauValue}, ${mauValue}, ${conversionValue})`,
+        });
+        return {
+          dau: dauValue,
+          mau: mauValue,
+          regs: regsValue,
+          deps: depsValue,
+          conversion: conversionValue,
+        };
+      },
+    );
+
+    if (clickhouseMetrics) {
+      ({ dau, mau, regs, deps, conversion } = clickhouseMetrics);
     } else {
       const dayLogins = await this.rangeStream(
         'analytics:auth.login',
@@ -1199,57 +1369,64 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   async rebuildStakeAggregates() {
-    if (!this.client) {
-      logBootstrapNotice(this.logger, 'No ClickHouse client configured');
-      return;
-    }
+    const handled = await this.withClickHouse<boolean>(
+      'rebuild stake analytics aggregates',
+      false,
+      async (client) => {
+        const createTables = [
+          `CREATE TABLE IF NOT EXISTS stake_vpip (stake String, vpip Float64) ENGINE = MergeTree() ORDER BY stake`,
+          `CREATE TABLE IF NOT EXISTS stake_pfr (stake String, pfr Float64) ENGINE = MergeTree() ORDER BY stake`,
+          `CREATE TABLE IF NOT EXISTS stake_action_latency (stake String, latency_ms Float64) ENGINE = MergeTree() ORDER BY stake`,
+          `CREATE TABLE IF NOT EXISTS stake_pot (stake String, pot Float64) ENGINE = MergeTree() ORDER BY stake`,
+        ];
+        for (const sql of createTables) {
+          await client.command({ query: sql });
+        }
 
-    const createTables = [
-      `CREATE TABLE IF NOT EXISTS stake_vpip (stake String, vpip Float64) ENGINE = MergeTree() ORDER BY stake`,
-      `CREATE TABLE IF NOT EXISTS stake_pfr (stake String, pfr Float64) ENGINE = MergeTree() ORDER BY stake`,
-      `CREATE TABLE IF NOT EXISTS stake_action_latency (stake String, latency_ms Float64) ENGINE = MergeTree() ORDER BY stake`,
-      `CREATE TABLE IF NOT EXISTS stake_pot (stake String, pot Float64) ENGINE = MergeTree() ORDER BY stake`,
-    ];
-    for (const sql of createTables) {
-      await this.query(sql);
-    }
+        const truncates = [
+          'TRUNCATE TABLE stake_vpip',
+          'TRUNCATE TABLE stake_pfr',
+          'TRUNCATE TABLE stake_action_latency',
+          'TRUNCATE TABLE stake_pot',
+        ];
+        for (const sql of truncates) {
+          await client.command({ query: sql });
+        }
 
-    await this.query('TRUNCATE TABLE stake_vpip');
-    await this.query('TRUNCATE TABLE stake_pfr');
-    await this.query('TRUNCATE TABLE stake_action_latency');
-    await this.query('TRUNCATE TABLE stake_pot');
-
-    const vpipSql = `INSERT INTO stake_vpip SELECT stake, avg(vpip) FROM (
+        const inserts = [
+          `INSERT INTO stake_vpip SELECT stake, avg(vpip) FROM (
       SELECT stake, playerId, handId,
         max(if(action IN ('bet','call'),1,0)) AS vpip
       FROM game_event
       PREWHERE street = 'preflop'
       GROUP BY stake, playerId, handId
-    ) GROUP BY stake`;
-
-    const pfrSql = `INSERT INTO stake_pfr SELECT stake, avg(pfr) FROM (
+    ) GROUP BY stake`,
+          `INSERT INTO stake_pfr SELECT stake, avg(pfr) FROM (
       SELECT stake, playerId, handId,
         max(if(action = 'bet',1,0)) AS pfr
       FROM game_event
       PREWHERE street = 'preflop'
       GROUP BY stake, playerId, handId
-    ) GROUP BY stake`;
-
-    const latencySql = `INSERT INTO stake_action_latency
+    ) GROUP BY stake`,
+          `INSERT INTO stake_action_latency
       SELECT stake, avg(latency_ms) AS latency_ms
       FROM game_event
-      GROUP BY stake`;
-
-    const potSql = `INSERT INTO stake_pot SELECT stake, avg(pot) AS pot FROM (
+      GROUP BY stake`,
+          `INSERT INTO stake_pot SELECT stake, avg(pot) AS pot FROM (
       SELECT stake, handId, max(pot) AS pot
       FROM game_event
       GROUP BY stake, handId
-    ) GROUP BY stake`;
+    ) GROUP BY stake`,
+        ];
+        for (const sql of inserts) {
+          await client.command({ query: sql });
+        }
+        return true;
+      },
+    );
 
-    await this.query(vpipSql);
-    await this.query(pfrSql);
-    await this.query(latencySql);
-    await this.query(potSql);
-    this.logger.log('Rebuilt stake analytics aggregates');
+    if (handled) {
+      this.logger.log('Rebuilt stake analytics aggregates');
+    }
   }
 }
