@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import ActionControls from '@/app/components/tables/ActionControls';
-import SidePanel from '@/app/components/tables/SidePanel';
-import PokerTableLayout from '@/app/components/tables/PokerTableLayout';
-import type { Player } from '@/app/components/tables/types';
+import ActionControls from '@/components/tables/action-controls';
+import SidePanel from '@/components/tables/side-panel';
+import PokerTableLayout from '@/components/tables/poker-table-layout';
+import type { Player } from '@/components/tables/types';
 
 jest.mock('@/hooks/useChipDenominations', () => ({
   useChipDenominations: () => ({

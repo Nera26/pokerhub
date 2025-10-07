@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-jest.mock('@/app/components/common/TransactionHistoryTable', () => {
+jest.mock('@/components/common/transaction-history-table', () => {
   return {
     __esModule: true,
     default: jest.fn(() => <div data-testid="tx-table" />),
@@ -27,19 +27,19 @@ jest.mock('@/hooks/useTranslations', () => ({
   })),
 }));
 
-import TransactionHistoryModal from '@/app/components/modals/TransactionHistoryModal';
-import TransactionHistoryTable from '@/app/components/common/TransactionHistoryTable';
+import TransactionHistoryModal from '@/components/modals/transaction-history-modal';
+import TransactionHistoryTable from '@/components/common/transaction-history-table';
 import useTransactionColumns from '@/hooks/useTransactionColumns';
 import { z } from 'zod';
 import { AdminTransactionEntriesSchema } from '@shared/transactions.schema';
 import { formatCurrency } from '@/lib/formatCurrency';
-import { useTransactionHistoryControls } from '@/app/components/common/TransactionHistoryControls';
+import { useTransactionHistoryControls } from '@/components/common/transaction-history-controls';
 
 type AdminTransactionEntry = z.infer<
   typeof AdminTransactionEntriesSchema
 >[number];
 
-jest.mock('@/app/components/common/TransactionHistoryControls', () => ({
+jest.mock('@/components/common/transaction-history-controls', () => ({
   useTransactionHistoryControls: jest.fn(),
 }));
 
@@ -251,7 +251,7 @@ describe('TransactionHistoryModal', () => {
 
   it('renders datetime-only history entries in chronological order', async () => {
     const actualTableModule = jest.requireActual(
-      '@/app/components/common/TransactionHistoryTable',
+      '@/components/common/transaction-history-table',
     );
     const tableMock = TransactionHistoryTable as unknown as jest.Mock;
     const originalImpl = tableMock.getMockImplementation();

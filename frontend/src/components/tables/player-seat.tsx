@@ -1,0 +1,164 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
+import Image from 'next/image';
+import { useSetSeatPosition } from '@/stores/table-store';
+import { useTableUi } from './table-ui-context';
+
+import PlayerBalance from './player-balance';
+import PlayerHoleCards from './player-hole-cards';
+import TimerRing from './timer-ring';
+import ActionBubble from './action-bubble';
+import WinAnimation from './win-animation';
+import type { Player } from './types';
+import { useTableThemePositions } from './table-theme-gate';
+
+export interface PlayerSeatProps {
+  player: Player;
+  style?: CSSProperties;
+  street?: 'pre' | 'flop' | 'turn' | 'river';
+  density?: 'compact' | 'default' | 'large';
+}
+
+export default function PlayerSeat({
+  player,
+  style,
+  street: _street = 'pre',
+  density = 'default',
+}: PlayerSeatProps) {
+  const { pendingBySeat, setActiveSeat, activeSeatId } = useTableUi();
+  const optimistic = pendingBySeat[player.id] || 0;
+  const setSeatPosition = useSetSeatPosition();
+  const displayedBalance = player.chips - optimistic;
+  const isHero = player.username === 'You';
+  const spotlight = player.id === activeSeatId && player.isActive;
+  const positions = useTableThemePositions();
+  const badge = positions[player.pos ?? '']?.badge;
+
+  const sizeStyles = {
+    compact: {
+      avatar: 'w-[60px] h-[60px]',
+      balance: 'mt-1',
+    },
+    default: {
+      avatar: 'w-[70px] h-[70px]',
+      balance: 'mt-1',
+    },
+    large: {
+      avatar: 'w-[80px] h-[80px]',
+      balance: 'mt-2',
+    },
+  } as const;
+  const sz = sizeStyles[density];
+
+  // Seat position tracking
+  const xPercent =
+    typeof style?.left === 'string' ? parseFloat(style.left) : 50;
+  const yPercent = typeof style?.top === 'string' ? parseFloat(style.top) : 50;
+
+  useEffect(() => {
+    setSeatPosition(player.id, { x: xPercent, y: yPercent });
+  }, [player.id, xPercent, yPercent, setSeatPosition]);
+
+  useEffect(() => {
+    if (player.isActive) setActiveSeat(player.id);
+  }, [player.isActive, player.id, setActiveSeat]);
+
+  const [hovered, setHovered] = useState(false);
+  const expanded = hovered || player.isActive;
+
+  return (
+    <>
+      <div
+        className="absolute text-center select-none cursor-default"
+        style={{ ...style, opacity: player.sittingOut ? 0.85 : 1 }}
+        data-seat-id={player.id}
+        tabIndex={0}
+        role="button"
+        aria-label={`Seat for ${player.username}`}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
+      >
+        <div
+          className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-200"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(255,255,255,0.15), rgba(255,255,255,0) 70%)',
+            opacity: spotlight ? 1 : 0,
+          }}
+        />
+        <div className="relative flex flex-col items-center z-20">
+          <WinAnimation player={player}>
+            {(winPulse) => (
+              <div className="relative">
+                <TimerRing
+                  player={player}
+                  avatarClass={sz.avatar}
+                  winPulse={winPulse}
+                />
+                {badge && (
+                  <Image
+                    src={badge}
+                    alt={player.pos ?? 'badge'}
+                    width={32}
+                    height={32}
+                    sizes="32px"
+                    className="pointer-events-none absolute -bottom-1 -right-1 translate-x-1/3 translate-y-1/3 z-10 w-8 h-8"
+                  />
+                )}
+              </div>
+            )}
+          </WinAnimation>
+
+          <PlayerBalance
+            balance={displayedBalance}
+            className={sz.balance}
+            isAllIn={player.isAllIn}
+            isWinner={player.isWinner}
+          />
+
+          <ActionBubble
+            committed={player.committed ?? 0}
+            lastAction={player.lastAction}
+          />
+
+          <div
+            className={[
+              'absolute left-1/2 -translate-x-1/2 flex flex-col items-center rounded bg-transparent px-2 py-1 text-xs text-white space-y-1',
+              isHero ? 'bottom-full mb-2' : 'top-full mt-2',
+              'transition-opacity transition-transform duration-200',
+              expanded
+                ? 'opacity-100 translate-y-0 pointer-events-auto'
+                : `opacity-0 ${isHero ? 'translate-y-2' : '-translate-y-2'} pointer-events-none`,
+            ].join(' ')}
+          >
+            <span className="font-semibold">{player.username}</span>
+            {player.lastAction && <span>{player.lastAction}</span>}
+            {isHero && player.cards && (
+              <PlayerHoleCards cards={player.cards} isHero />
+            )}
+          </div>
+        </div>
+      </div>
+      <style jsx>{`
+        @keyframes winnerPulse {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.7;
+          }
+        }
+        .winner-pulse {
+          animation: winnerPulse 1s ease-in-out;
+        }
+      `}</style>
+    </>
+  );
+}

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import WalletSummary from '@/app/components/wallet/WalletSummary';
+import WalletSummary from '@/components/wallet/wallet-summary';
 
 describe('WalletSummary', () => {
   it('shows KYC status', () => {

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TournamentRegisterModalContent, {
   TournamentDetails,
-} from '@/app/components/tournaments/TournamentRegisterModalContent';
+} from '@/components/tournaments/tournament-register-modal-content';
 
 describe('TournamentRegisterModalContent', () => {
   const details: TournamentDetails = {

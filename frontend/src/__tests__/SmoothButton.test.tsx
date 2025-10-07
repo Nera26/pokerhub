@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import SmoothButton from '@/app/components/ui/SmoothButton';
+import SmoothButton from '@/components/ui/smooth-button';
 
 describe('SmoothButton', () => {
   it('renders with accessible role, label, and default styles', async () => {

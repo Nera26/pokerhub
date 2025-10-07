@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { useRouter, useParams } from 'next/navigation';
-import LanguageSelector from '@/app/components/common/LanguageSelector';
+import LanguageSelector from '@/components/common/language-selector';
 import { fetchLanguages } from '@/lib/api/translations';
 
 jest.mock('next/navigation', () => ({

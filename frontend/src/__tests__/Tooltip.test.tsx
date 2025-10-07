@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Tooltip from '@/app/components/ui/Tooltip';
+import Tooltip from '@/components/ui/tooltip';
 
 describe('Tooltip', () => {
   it('shows and hides on hover', async () => {
@@ -8,7 +8,7 @@ describe('Tooltip', () => {
     render(
       <Tooltip text="Info">
         <button>Trigger</button>
-      </Tooltip>,
+      </tooltip>,
     );
     const trigger = screen.getByRole('button', { name: 'Trigger' });
     const tip = screen.getByRole('tooltip');
@@ -29,7 +29,7 @@ describe('Tooltip', () => {
     render(
       <Tooltip text="Info" delay={500}>
         <button>Trigger</button>
-      </Tooltip>,
+      </tooltip>,
     );
     const trigger = screen.getByRole('button', { name: 'Trigger' });
     const tip = screen.getByRole('tooltip');

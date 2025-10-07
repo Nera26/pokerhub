@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react';
 import LoginPage from '@/features/login';
 import ForgotPasswordPage from '@/features/forgot-password';
 
-jest.mock('@/app/components/auth/LoginForm', () => () => <div>Login Form</div>);
-jest.mock('@/app/components/auth/ForgotPasswordForm', () => () => (
+jest.mock('@/components/auth/login-form', () => () => <div>Login Form</div>);
+jest.mock('@/components/auth/forgot-password-form', () => () => (
   <div>Forgot Password Form</div>
 ));
-jest.mock('@/app/components/auth/SocialLoginButtons', () => () => (
+jest.mock('@/components/auth/social-login-buttons', () => () => (
   <div>Social Login Buttons</div>
 ));
 

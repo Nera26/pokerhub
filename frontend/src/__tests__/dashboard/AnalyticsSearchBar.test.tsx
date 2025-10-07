@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { useLocale } from 'next-intl';
 import { useTranslations } from '@/hooks/useTranslations';
 import { useAuditLogTypes } from '@/hooks/lookups';
-import SearchBar from '@/app/components/dashboard/analytics/SearchBar';
+import SearchBar from '@/components/dashboard/analytics/search-bar';
 
 jest.mock('next-intl', () => ({
   useLocale: jest.fn(),

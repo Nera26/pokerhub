@@ -11,15 +11,15 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => mockUseQueryClient(),
 }));
 
-jest.mock('../../components/user/ProfileSection', () => () => (
+jest.mock('@/components/user/profile-section', () => () => (
   <div>Profile</div>
 ));
-jest.mock('../../components/user/GameStatistics', () => () => <div>Stats</div>);
-jest.mock('../../components/user/HistoryTabs', () => () => <div>Tabs</div>);
-jest.mock('../../components/user/EditProfileModal', () => () => null);
-jest.mock('../../components/user/LogoutModal', () => () => null);
+jest.mock('@/components/user/game-statistics', () => () => <div>Stats</div>);
+jest.mock('@/components/user/history-tabs', () => () => <div>Tabs</div>);
+jest.mock('@/components/user/edit-profile-modal', () => () => null);
+jest.mock('@/components/user/logout-modal', () => () => null);
 
-jest.mock('../../components/user/HistoryList', () => (props: any) => (
+jest.mock('@/components/user/history-list', () => (props: any) => (
   <button
     onClick={() =>
       props.onViewBracket?.({ id: 'tournament-1', title: 'Summer Series' })
@@ -29,10 +29,10 @@ jest.mock('../../components/user/HistoryList', () => (props: any) => (
   </button>
 ));
 
-jest.mock('../../components/user/FilterDropdown', () => () => null);
+jest.mock('@/components/user/filter-dropdown', () => () => null);
 
 jest.mock(
-  '../../components/user/BracketModal',
+  '@/components/user/bracket-modal',
   () =>
     ({ isOpen, tournament, onClose }: any) =>
       isOpen ? (

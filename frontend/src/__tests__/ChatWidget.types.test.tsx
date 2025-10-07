@@ -1,4 +1,4 @@
-import ChatWidget from '@/app/components/common/chat/ChatWidget';
+import ChatWidget from '@/components/common/chat/chat-widget';
 
 describe('ChatWidget types', () => {
   it('rejects unused props', () => {

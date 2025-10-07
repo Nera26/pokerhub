@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { EventEmitter } from 'events';
-import TablePageClient from '@/app/table/[id]/TablePageClient';
+import TablePageClient from '@/app/table/[id]/tablePageClient';
 import { useTableData } from '@/hooks/useTableData';
 import useSocket from '@/hooks/useSocket';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
@@ -16,7 +16,7 @@ jest.mock('next/dynamic', () => {
   };
   return dynamic;
 });
-jest.mock('@/components/FairnessModal', () => ({
+jest.mock('@/components/fairness-modal', () => ({
   __esModule: true,
   default: ({ isOpen, handId }: { isOpen: boolean; handId: string }) =>
     isOpen ? <div data-testid="fairness-modal">Proof {handId}</div> : null,

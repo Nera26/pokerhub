@@ -16,7 +16,7 @@ test('admin can create tabs at runtime', async ({ page }) => {
       id: tabId,
       title: 'QA Reports',
       icon: 'chart-line',
-      component: '@/app/components/dashboard/AdminEvents',
+      component: '@/components/dashboard/admin-events',
     },
     headers: { Authorization: `Bearer ${adminToken}` },
   });

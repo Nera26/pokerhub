@@ -8,8 +8,8 @@ import {
   type Tournament,
 } from '@/hooks/useLobbyData';
 import { useGameTypes } from '@/hooks/useGameTypes';
-import type { CashGameListProps } from '@/app/components/home/CashGameList';
-import type { TournamentListProps } from '@/components/TournamentList';
+import type { CashGameListProps } from '@/components/home/cash-game-list';
+import type { TournamentListProps } from '@/components/tournament-list';
 
 jest.mock('@/hooks/useLobbyData');
 jest.mock('@/hooks/useGameTypes', () => ({

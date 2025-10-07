@@ -5,12 +5,12 @@ import dynamic from 'next/dynamic';
 import { useTableData } from '@/hooks/useTableData';
 import { useApiError } from '@/hooks/useApiError';
 import useSocket from '@/hooks/useSocket';
-import FairnessModal from '@/components/FairnessModal';
-import CenteredMessage from '@/components/CenteredMessage';
+import FairnessModal from '@/components/fairness-modal';
+import CenteredMessage from '@/components/centered-message';
 import { EVENT_SCHEMA_VERSION } from '@shared/events';
 
 const PokerTableLayout = dynamic(
-  () => import('../../components/tables/PokerTableLayout'),
+  () => import('@/components/tables/poker-table-layout'),
   {
     loading: () => <CenteredMessage>Loading table...</CenteredMessage>,
   },

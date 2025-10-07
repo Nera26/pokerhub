@@ -1,6 +1,6 @@
 'use client';
 
-import RouteError from './components/ui/RouteError';
+import RouteError from './components/ui/route-error';
 
 export default function GlobalError(props: {
   error: Error & { digest?: string };

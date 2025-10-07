@@ -27,7 +27,7 @@ import {
   applyAction,
   getActionHistory,
 } from '@/lib/api/collusion';
-import { useAuthStore } from '@/app/store/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 
 describe('collusion api', () => {
   const originalFetch = global.fetch;

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { act } from 'react-dom/test-utils';
-import ActionTimer from '@/app/components/tables/ActionTimer';
+import ActionTimer from '@/components/tables/action-timer';
 import { getServerTime, setServerTime } from '@/lib/server-time';
 
 describe('ActionTimer', () => {

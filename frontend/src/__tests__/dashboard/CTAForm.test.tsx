@@ -15,7 +15,7 @@ jest.mock('@shared/types', () => {
   return { CTASchema, CTAVariantSchema };
 });
 
-import CTAForm from '@/app/components/dashboard/CTAForm';
+import CTAForm from '@/components/dashboard/cta-form';
 import { createCTA, updateCTA } from '@/lib/api/lobby';
 
 jest.mock('@/lib/api/lobby', () => ({

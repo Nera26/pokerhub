@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import SeatRing from '@/app/components/tables/SeatRing';
-import type { Player } from '@/app/components/tables/types';
+import SeatRing from '@/components/tables/seat-ring';
+import type { Player } from '@/components/tables/types';
 import type { ImgHTMLAttributes } from 'react';
 
 const mockUseTableTheme = jest.fn();

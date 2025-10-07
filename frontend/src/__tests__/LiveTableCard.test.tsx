@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LiveTableCard, {
   LiveTableCardProps,
-} from '@/app/components/home/LiveTableCard';
+} from '@/components/home/live-table-card';
 
 const baseProps: LiveTableCardProps = {
   tableName: 'Test Table',

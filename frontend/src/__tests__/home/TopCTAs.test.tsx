@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import TopCTAs from '@/app/components/home/TopCTAs';
+import TopCTAs from '@/components/home/top-ctas';
 import { fetchCTAs } from '@/lib/api/lobby';
 
 jest.mock('@/lib/api/lobby', () => ({

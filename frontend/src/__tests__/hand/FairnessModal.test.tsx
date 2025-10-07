@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import FairnessModal from '@/components/FairnessModal';
+import FairnessModal from '@/components/fairness-modal';
 
 jest.mock('@/lib/api/hands');
 jest.mock('@shared/verify');

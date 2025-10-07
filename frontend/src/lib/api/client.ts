@@ -3,8 +3,8 @@ import { fetchJson, type ApiError } from '@shared/utils/http';
 import { API_CONTRACT_VERSION } from '@shared/constants';
 import { ServiceStatusResponseSchema } from '@shared/types';
 import { getBaseUrl } from '@/lib/base-url';
-import { useAuthStore } from '@/app/store/authStore';
-import { dispatchContractMismatch } from '@/components/ContractMismatchNotice';
+import { useAuthStore } from '@/stores/auth-store';
+import { dispatchContractMismatch } from '@/components/contract-mismatch-notice';
 
 export type { ApiError };
 

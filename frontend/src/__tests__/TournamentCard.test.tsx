@@ -1,35 +1,35 @@
 import type { ReactNode } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import TournamentCard from '@/app/components/tournaments/TournamentCard';
+import TournamentCard from '@/components/tournaments/tournament-card';
 import Page from '@/app/tournaments/page';
 import { fetchTournaments, withdrawTournament } from '@/lib/api/lobby';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider } from '@/stores/auth-context';
 
 jest.mock('@/lib/api/lobby', () => ({
   ...jest.requireActual('@/lib/api/lobby'),
   fetchTournaments: jest.fn(),
   withdrawTournament: jest.fn(),
 }));
-jest.mock('@/app/components/common/Header', () => ({
+jest.mock('@/components/common/header', () => ({
   __esModule: true,
   default: function HeaderMock() {
     return <div />;
   },
 }));
-jest.mock('@/app/components/common/BottomNav', () => ({
+jest.mock('@/components/common/bottom-nav', () => ({
   __esModule: true,
   default: function BottomNavMock() {
     return <div />;
   },
 }));
-jest.mock('@/app/components/ui/ToastNotification', () => ({
+jest.mock('@/components/ui/toast-notification', () => ({
   __esModule: true,
   default: function ToastMock() {
     return null;
   },
 }));
-jest.mock('@/app/components/ui/Modal', () => ({
+jest.mock('@/components/ui/modal', () => ({
   __esModule: true,
   default: function ModalMock({ children }: { children: ReactNode }) {
     return <div>{children}</div>;

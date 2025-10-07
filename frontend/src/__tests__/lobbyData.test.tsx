@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
-import type { CashGameListProps } from '@/app/components/home/CashGameList';
-import type { TournamentListProps } from '@/components/TournamentList';
+import type { CashGameListProps } from '@/components/home/cash-game-list';
+import type { TournamentListProps } from '@/components/tournament-list';
 import { useTables, useTournaments } from '@/hooks/useLobbyData';
 import {
   server,
@@ -28,7 +28,7 @@ jest.mock('@/hooks/useGameTypes', () => ({
 }));
 
 // Keep chat widget inert for these tests
-jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+jest.mock('@/components/common/chat/chat-widget', () => ({
   __esModule: true,
   default: () => <div />,
 }));

@@ -17,7 +17,7 @@ import {
   useApplyCollusionAction,
 } from '@/hooks/collusion';
 import type { FlaggedSession, ReviewActionLog } from '@shared/types';
-import { useAuthStore } from '@/app/store/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 
 describe('collusion hooks', () => {
   beforeEach(() => {

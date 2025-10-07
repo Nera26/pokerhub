@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Player } from '@/app/components/tables/types';
+import type { Player } from '@/components/tables/types';
 
 interface UseBettingOptions {
   players: Player[];

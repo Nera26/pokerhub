@@ -31,57 +31,57 @@ jest.mock('@/lib/api/admin', () => {
     {
       id: 'analytics',
       title: 'Analytics',
-      component: '@/app/components/dashboard/analytics/Analytics',
+      component: '@/components/dashboard/analytics/analytics',
       source: 'config',
     },
     {
       id: 'transactions',
       title: 'Transactions',
-      component: '@/app/components/dashboard/transactions/TransactionHistory',
+      component: '@/components/dashboard/transactions/transaction-history',
       source: 'config',
     },
     {
       id: 'deposits-reconcile',
       title: 'Bank Reconciliation',
-      component: '@/app/components/dashboard/AdminBankReconciliation',
+      component: '@/components/dashboard/admin-bank-reconciliation',
       source: 'config',
     },
     {
       id: 'settings',
       title: 'Settings',
-      component: '@/app/components/dashboard/Settings',
+      component: '@/components/dashboard/settings',
       source: 'config',
     },
     {
       id: 'users',
       title: 'Users',
-      component: '@/app/components/dashboard/ManageUsers',
+      component: '@/components/dashboard/manage-users',
     },
     {
       id: 'tables',
       title: 'Tables',
-      component: '@/app/components/dashboard/ManageTables',
+      component: '@/components/dashboard/manage-tables',
     },
     {
       id: 'tournaments',
       title: 'Tournaments',
-      component: '@/app/components/dashboard/ManageTournaments',
+      component: '@/components/dashboard/manage-tournaments',
     },
     {
       id: 'broadcast',
       title: 'Broadcasts',
-      component: '@/app/components/dashboard/BroadcastPanel',
+      component: '@/components/dashboard/broadcast-panel',
     },
     {
       id: 'bonuses',
       title: 'Bonuses',
-      component: '@/app/components/dashboard/BonusManager',
+      component: '@/components/dashboard/bonus-manager',
       source: 'database',
     },
     {
       id: 'wallet-iban',
       title: 'Wallet IBAN',
-      component: '@/app/components/dashboard/IbanManager',
+      component: '@/components/dashboard/iban-manager',
     },
   ];
   return {
@@ -152,37 +152,37 @@ jest.mock('@/lib/api/nav', () => ({
   fetchNavItems: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock('@/app/components/dashboard/analytics/Analytics', () => () => (
+jest.mock('@/components/dashboard/analytics/analytics', () => () => (
   <div>Analytics Module</div>
 ));
-jest.mock('@/app/components/dashboard/Sidebar', () => () => <div>Sidebar</div>);
-jest.mock('@/app/components/dashboard/ManageUsers', () => () => (
+jest.mock('@/components/dashboard/sidebar', () => () => <div>Sidebar</div>);
+jest.mock('@/components/dashboard/manage-users', () => () => (
   <div>Users Module</div>
 ));
 jest.mock('@/features/collusion', () => () => <div>Collusion Module</div>);
-jest.mock('@/app/components/dashboard/ManageTables', () => () => (
+jest.mock('@/components/dashboard/manage-tables', () => () => (
   <div>Tables Module</div>
 ));
-jest.mock('@/app/components/dashboard/FeatureFlagsPanel', () => () => (
+jest.mock('@/components/dashboard/feature-flags-panel', () => () => (
   <div>Feature Flags Module</div>
 ));
 jest.mock(
-  '@/app/components/dashboard/transactions/TransactionHistory',
+  '@/components/dashboard/transactions/transaction-history',
   () => () => <div>Transactions Module</div>,
 );
-jest.mock('@/app/components/dashboard/ManageTournaments', () => () => (
+jest.mock('@/components/dashboard/manage-tournaments', () => () => (
   <div>Tournaments Module</div>
 ));
-jest.mock('@/app/components/dashboard/AdminBankReconciliation', () => () => (
+jest.mock('@/components/dashboard/admin-bank-reconciliation', () => () => (
   <div>Bank Reconciliation Module</div>
 ));
-jest.mock('@/app/components/dashboard/BroadcastPanel', () => () => (
+jest.mock('@/components/dashboard/broadcast-panel', () => () => (
   <div>Broadcast Module</div>
 ));
-jest.mock('@/app/components/dashboard/IbanManager', () => () => (
+jest.mock('@/components/dashboard/iban-manager', () => () => (
   <div>IBAN Manager Module</div>
 ));
-jest.mock('@/app/components/dashboard/Settings', () => () => (
+jest.mock('@/components/dashboard/settings', () => () => (
   <div>Settings Module</div>
 ));
 

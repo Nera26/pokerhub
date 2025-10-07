@@ -1,3 +1,3 @@
-import createDynamicPage from '@/app/utils/createDynamicPage';
+import createDynamicPage from '@/utils/create-dynamic-page';
 
 export default createDynamicPage(() => import('@/features/table'));

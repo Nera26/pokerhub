@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import ProfileSection from '@/app/components/user/ProfileSection';
+import ProfileSection from '@/components/user/profile-section';
 import { fetchTiers } from '@/lib/api/tiers';
 import type { UserProfile } from '@shared/types';
 

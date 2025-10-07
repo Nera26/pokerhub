@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import BlockedCountriesPage from '../page';
-import { renderWithClient } from '@/app/components/dashboard/__tests__/renderWithClient';
+import { renderWithClient } from '@/components/dashboard/__tests__/renderWithClient';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import {
   fetchBlockedCountries,

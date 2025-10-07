@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { getAuthToken } from '@/context/AuthContext';
+import { getAuthToken } from '@/stores/auth-context';
 import type { ApiError } from '@shared/utils/http';
 import {
   FlaggedSessionsResponse,

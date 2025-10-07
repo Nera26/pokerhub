@@ -2,14 +2,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WalletPage from '@/features/wallet';
 import { useWalletStatus, useIban } from '@/hooks/wallet';
-import BankTransferModal from '@/app/components/wallet/BankTransferModal';
+import BankTransferModal from '@/components/wallet/bank-transfer-modal';
 
 jest.mock('@/hooks/wallet', () => ({
   useWalletStatus: jest.fn(),
   useIban: jest.fn(),
 }));
 
-jest.mock('@/app/components/wallet/BankTransferModal', () => ({
+jest.mock('@/components/wallet/bank-transfer-modal', () => ({
   __esModule: true,
   default: jest.fn(({ mode }) => <div>{mode} modal</div>),
 }));

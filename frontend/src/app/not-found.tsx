@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Button from './components/ui/Button';
+import Button from './components/ui/button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faWallet } from '@fortawesome/free-solid-svg-icons/faWallet';
 import { faTags } from '@fortawesome/free-solid-svg-icons/faTags';

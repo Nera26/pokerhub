@@ -1,32 +1,38 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, memo, useEffect, useMemo, useState } from 'react';
 import type { ReactNode, ComponentType } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faCoins, faBars } from '@fortawesome/free-solid-svg-icons';
-import MetricCard from '@/app/components/dashboard/MetricCard';
-import { useAuthStore } from '@/app/store/authStore';
+import MetricCard from '@/components/dashboard/metric-card';
+import { useAuthStore } from '@/stores/auth-store';
 import { fetchProfile } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
 
 import { fetchAdminTabs, fetchAdminTabMeta } from '@/lib/api/admin';
 import type { SidebarTab } from '@shared/types';
-const Sidebar = dynamic(() => import('@/app/components/dashboard/Sidebar'), {
+const Sidebar = dynamic(() => import('@/components/dashboard/sidebar'), {
   loading: () => <div>Loading sidebar...</div>,
 });
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
-import DashboardModule from '@/app/components/dashboard/DashboardModule';
+import DashboardModule from '@/components/dashboard/dashboard-module';
 import { getSiteMetadata } from '@/lib/metadata';
 
 function isSidebarTab(v: string | null, tabs: SidebarTab[]): v is SidebarTab {
   return !!v && tabs.includes(v as SidebarTab);
 }
 
-function TabFallback({ tab, online }: { tab: SidebarTab; online?: number }) {
+const TabFallback = memo(function TabFallback({
+  tab,
+  online,
+}: {
+  tab: SidebarTab;
+  online?: number;
+}) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['admin-tab-meta', tab],
     queryFn: ({ signal }) => fetchAdminTabMeta(tab, { signal }),
@@ -57,7 +63,9 @@ function TabFallback({ tab, online }: { tab: SidebarTab; online?: number }) {
       {...(tab === 'broadcast' ? { props: { online: online ?? 0 } } : {})}
     />
   );
-}
+});
+
+TabFallback.displayName = 'TabFallback';
 
 function formatTabLabel(id: string): string {
   return id
@@ -81,8 +89,11 @@ function DashboardPage() {
     queryFn: ({ signal }) => fetchAdminTabs({ signal }),
   });
 
-  const tabItems = tabsData ?? [];
-  const tabs = tabItems.map((t) => t.id) as SidebarTab[];
+  const tabItems = useMemo(() => tabsData ?? [], [tabsData]);
+  const tabs = useMemo(
+    () => tabItems.map((t) => t.id) as SidebarTab[],
+    [tabItems],
+  );
   const titles = useMemo(
     () =>
       Object.fromEntries(tabItems.map((t) => [t.id, t.title])) as Record<
@@ -135,25 +146,35 @@ function DashboardPage() {
     enabled: !tabConfig[tab],
   });
 
+  const searchString = search.toString();
+  const searchTab = search.get('tab');
+
   useEffect(() => {
     if (!tabs.length) return;
-    const q = search.get('tab');
-    if (q) {
-      setTab(q as SidebarTab);
+    if (isSidebarTab(searchTab, tabs)) {
+      setTab((current) => (current === searchTab ? current : (searchTab as SidebarTab)));
     } else {
-      setTab('dashboard');
+      setTab((current) => (current === 'dashboard' ? current : 'dashboard'));
     }
-  }, [tabs, search]);
+  }, [searchTab, tabs]);
 
   // Keep ?tab=<id> in the URL in sync with state
   useEffect(() => {
     if (!tabs.length) return;
-    const qs = new URLSearchParams(search.toString());
-    if (qs.get('tab') !== tab) {
-      qs.set('tab', tab);
-      router.replace(`${pathname}?${qs.toString()}`);
+    const qs = new URLSearchParams(searchString);
+    const currentTab = qs.get('tab');
+    const nextTab = tab === 'dashboard' ? null : tab;
+    if (currentTab === nextTab || (currentTab === null && nextTab === null)) {
+      return;
     }
-  }, [tab, router, pathname, search, tabs]);
+    if (nextTab) {
+      qs.set('tab', nextTab);
+    } else {
+      qs.delete('tab');
+    }
+    const query = qs.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [tab, tabs.length, pathname, router, searchString]);
 
   const computedTitle =
     titles[tab] ?? tabMeta?.title ?? formatTabLabel(tab ?? '');
@@ -161,6 +182,13 @@ function DashboardPage() {
     tab === 'dashboard'
       ? 'Admin Dashboard'
       : computedTitle || 'Admin Dashboard';
+
+  const onlinePlayers = metrics?.online ?? 0;
+  const revenueValue = metrics?.revenue ?? 0;
+  const revenueDisplay = useMemo(
+    () => `$${revenueValue.toLocaleString()}`,
+    [revenueValue],
+  );
 
   useEffect(() => {
     if (avatarUrl === null) {
@@ -194,14 +222,14 @@ function DashboardPage() {
             <MetricCard
               icon={faUsers}
               label="Online"
-              value={metrics?.online ?? 0}
+              value={onlinePlayers}
               loading={metricsLoading}
               error={metricsError}
             />
             <MetricCard
               icon={faCoins}
               label="Revenue"
-              value={`$${metrics?.revenue.toLocaleString() ?? '0'}`}
+              value={revenueDisplay}
               loading={metricsLoading}
               error={metricsError}
             />

@@ -6,7 +6,7 @@ import {
   useApplyCollusionAction,
   nextAction,
 } from '@/hooks/collusion';
-import { usePlayerId } from '@/app/store/authStore';
+import { usePlayerId } from '@/stores/auth-store';
 
 export default function CollusionPage() {
   const reviewerId = usePlayerId();

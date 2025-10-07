@@ -5,7 +5,7 @@ import {
 } from './utils/homeClient';
 import type { FC } from 'react';
 import { registerTournament } from '@/lib/api/lobby';
-import type { TournamentListProps } from '@/components/TournamentList';
+import type { TournamentListProps } from '@/components/tournament-list';
 
 jest.mock('@/lib/api/lobby');
 jest.mock('@/hooks/useApiError', () => ({
@@ -13,7 +13,7 @@ jest.mock('@/hooks/useApiError', () => ({
 }));
 
 let ChatWidgetMock: jest.Mock;
-jest.mock('@/app/components/common/chat/ChatWidget', () => {
+jest.mock('@/components/common/chat/chat-widget', () => {
   ChatWidgetMock = jest.fn(() => <div data-testid="chat-widget" />);
   return { __esModule: true, default: ChatWidgetMock };
 });

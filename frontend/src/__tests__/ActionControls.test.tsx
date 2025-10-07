@@ -5,7 +5,7 @@ import {
   AutoActions,
   BetInputProps,
   AutoActionsProps,
-} from '@/app/components/tables/ActionControls';
+} from '@/components/tables/action-controls';
 import { useState } from 'react';
 
 const defaultBetProps: BetInputProps = {

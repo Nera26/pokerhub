@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import CTAForm from '@/app/components/dashboard/CTAForm';
+import CTAForm from '@/components/dashboard/cta-form';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 
 export default function CTAAdminPage() {

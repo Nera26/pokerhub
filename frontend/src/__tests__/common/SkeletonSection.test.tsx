@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import SkeletonSection from '@/app/components/common/SkeletonSection';
+import SkeletonSection from '@/components/common/skeleton-section';
 
 describe('SkeletonSection horizontal lists', () => {
   it('renders list items based on count', () => {

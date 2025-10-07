@@ -17,13 +17,13 @@ describe('events tab', () => {
       {
         id: 'events',
         title: 'Events',
-        component: '@/app/components/dashboard/AdminEvents',
+        component: '@/components/dashboard/admin-events',
       },
     ]);
     mockFetchAdminTabMeta.mockResolvedValue({
       id: 'events',
       title: 'Events',
-      component: '@/app/components/dashboard/AdminEvents',
+      component: '@/components/dashboard/admin-events',
       enabled: true,
       message: '',
     });
