@@ -9,7 +9,7 @@ jest.mock('@/hooks/useGameTypes', () => ({
   }),
 }));
 
-jest.mock('@/app/components/common/chat/ChatWidget', () => ({
+jest.mock('@/components/common/chat/chat-widget', () => ({
   __esModule: true,
   default: () => null,
 }));

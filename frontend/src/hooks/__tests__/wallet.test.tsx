@@ -7,7 +7,7 @@ import {
   withdraw as withdrawApi,
 } from '@/lib/api/wallet';
 
-jest.mock('@/context/AuthContext', () => ({
+jest.mock('@/stores/auth-context', () => ({
   useAuth: () => ({ playerId: 'u1' }),
 }));
 

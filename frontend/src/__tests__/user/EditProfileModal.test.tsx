@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
-import EditProfileModal from '@/app/components/user/EditProfileModal';
+import EditProfileModal from '@/components/user/edit-profile-modal';
 import { fetchTiers } from '@/lib/api/tiers';
 import type { Tier, UserProfile } from '@shared/types';
 

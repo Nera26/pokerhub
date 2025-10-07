@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Page from '@/features/tournament';
 import { fetchTournaments, fetchTournamentDetails } from '@/lib/api/lobby';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider } from '@/stores/auth-context';
 
 jest.mock('@/lib/api/lobby', () => ({
   ...jest.requireActual('@/lib/api/lobby'),
@@ -11,22 +11,22 @@ jest.mock('@/lib/api/lobby', () => ({
   fetchTournamentDetails: jest.fn(),
 }));
 
-jest.mock('@/app/components/common/Header', () => ({
+jest.mock('@/components/common/header', () => ({
   __esModule: true,
   default: () => <div />,
 }));
 
-jest.mock('@/app/components/common/BottomNav', () => ({
+jest.mock('@/components/common/bottom-nav', () => ({
   __esModule: true,
   default: () => <div />,
 }));
 
-jest.mock('@/app/components/ui/ToastNotification', () => ({
+jest.mock('@/components/ui/toast-notification', () => ({
   __esModule: true,
   default: () => null,
 }));
 
-jest.mock('@/app/components/ui/Modal', () => ({
+jest.mock('@/components/ui/modal', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));

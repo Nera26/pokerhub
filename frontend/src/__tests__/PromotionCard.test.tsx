@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import PromotionCard from '@/app/components/promotions/PromotionCard';
+import PromotionCard from '@/components/promotions/promotion-card';
 
 describe('PromotionCard', () => {
   const basePromotion = {

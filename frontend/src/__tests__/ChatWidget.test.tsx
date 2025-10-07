@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, type MutableRefObject } from 'react';
-import ChatWidget from '@/app/components/common/chat/ChatWidget';
-import ChatHeader from '@/app/components/common/chat/ChatHeader';
-import ChatLog from '@/app/components/common/chat/ChatLog';
-import ChatInput from '@/app/components/common/chat/ChatInput';
-import type { Message } from '@/app/components/common/chat/types';
+import ChatWidget from '@/components/common/chat/chat-widget';
+import ChatHeader from '@/components/common/chat/chat-header';
+import ChatLog from '@/components/common/chat/chat-log';
+import ChatInput from '@/components/common/chat/chat-input';
+import type { Message } from '@/components/common/chat/types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock socket utilities to control connection and emissions

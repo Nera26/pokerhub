@@ -3,8 +3,8 @@
 import { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import Header from '../components/common/Header';
-import BottomNav from '../components/common/BottomNav';
+import Header from '@/components/common/header';
+import BottomNav from '@/components/common/bottom-nav';
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();

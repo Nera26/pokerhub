@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import ContractMismatchNotice from '@/components/ContractMismatchNotice';
+import ContractMismatchNotice from '@/components/contract-mismatch-notice';
 import { checkApiContractVersion } from '@/lib/api/client';
 
 jest.mock('@/lib/base-url', () => ({ getBaseUrl: () => 'http://example.com' }));

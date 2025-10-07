@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { TopCTAs, GameTabs, HomeLoadingSkeleton } from '../components/home';
+import { TopCTAs, GameTabs, HomeLoadingSkeleton } from '@/components/home';
 import {
   useTables,
   useTournaments,
@@ -10,13 +10,13 @@ import {
 } from '@/hooks/useLobbyData';
 import { useApiError } from '@/hooks/useApiError';
 import useToasts from '@/hooks/useToasts';
-import ToastNotification from '../components/ui/ToastNotification';
-import InlineError from '../components/ui/InlineError';
+import ToastNotification from '@/components/ui/toast-notification';
+import InlineError from '@/components/ui/inline-error';
 import type { GameType } from '@shared/types';
-import type { CashGameListProps } from '../components/home/CashGameList';
-import { type TournamentListProps } from '@/components/TournamentList';
+import type { CashGameListProps } from '@/components/home/cash-game-list';
+import { type TournamentListProps } from '@/components/tournament-list';
 import { registerTournament } from '@/lib/api/lobby';
-import ChatWidget from '../components/common/chat/ChatWidget';
+import ChatWidget from '@/components/common/chat/chat-widget';
 
 interface TournamentWithBreak extends Tournament {
   nextBreak?: string;
@@ -24,7 +24,7 @@ interface TournamentWithBreak extends Tournament {
 }
 
 const CashGameListDefault = dynamic<CashGameListProps>(
-  () => import('../components/home/CashGameList'),
+  () => import('@/components/home/cash-game-list'),
   {
     loading: () => (
       <section
@@ -43,7 +43,7 @@ const CashGameListDefault = dynamic<CashGameListProps>(
 );
 
 const TournamentListDefault = dynamic<TournamentListProps<TournamentWithBreak>>(
-  () => import('@/components/TournamentList'),
+  () => import('@/components/tournament-list'),
   {
     loading: () => (
       <section

@@ -1,5 +1,5 @@
 import { calculateSidePots } from '@shared/poker/sidePots';
-import type { Player } from '@/app/components/tables/types';
+import type { Player } from '@/components/tables/types';
 
 const makePlayer = (id: number, committed: number): Player => ({
   id,

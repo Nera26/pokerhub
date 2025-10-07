@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { apiClient } from '@/lib/api/client';
-import { useAuthStore } from '@/app/store/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import { setupFetch } from './setupFetch';
 
 describe('api client auth headers', () => {

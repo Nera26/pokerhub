@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Modal from '@/app/components/ui/Modal';
+import Modal from '@/components/ui/modal';
 
 describe('Modal accessibility', () => {
   it('cycles focus with Tab and Shift+Tab', async () => {

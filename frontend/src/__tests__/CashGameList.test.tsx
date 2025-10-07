@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import CashGameList from '@/app/components/home/CashGameList';
+import CashGameList from '@/components/home/cash-game-list';
 import type { Table } from '@/hooks/useLobbyData';
 
 describe('CashGameList', () => {

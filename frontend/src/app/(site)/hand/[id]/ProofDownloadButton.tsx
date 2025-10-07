@@ -1,7 +1,7 @@
 'use client';
 
 import { downloadHandProof } from '@/lib/api/hands';
-import Button from '@/app/components/ui/Button';
+import Button from '@/components/ui/button';
 
 export default function ProofDownloadButton({ handId }: { handId: string }) {
   return (

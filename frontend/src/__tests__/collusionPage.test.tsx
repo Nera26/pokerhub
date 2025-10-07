@@ -26,7 +26,7 @@ jest.mock('@/lib/api/collusion', () => ({
   getActionHistory: jest.fn(),
 }));
 
-jest.mock('@/app/store/authStore', () => ({
+jest.mock('@/stores/auth-store', () => ({
   useAuthToken: () => 'token',
   usePlayerId: () => 'r1',
 }));

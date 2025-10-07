@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import NotificationList from '@/app/components/notifications/NotificationList';
+import NotificationList from '@/components/notifications/notification-list';
 import { fetchNotifications, fetchUnreadCount } from '@/lib/api/notifications';
 import { useNotificationFilters } from '@/hooks/notifications';
 

@@ -12,7 +12,7 @@ import {
   initiateBankTransfer,
   withdraw,
 } from '@/lib/api/wallet';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/stores/auth-context';
 import type {
   IbanResponse,
   IbanDetails,

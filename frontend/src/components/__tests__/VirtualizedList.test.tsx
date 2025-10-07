@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import VirtualizedList from '@/components/VirtualizedList';
+import VirtualizedList from '@/components/virtualized-list';
 
 describe('VirtualizedList', () => {
   it('virtualizes when items reach threshold', () => {

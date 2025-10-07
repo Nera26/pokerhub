@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import useSocket from './useSocket';
-import type { Message } from '@/app/components/common/chat/types';
+import type { Message } from '@/components/common/chat/types';
 import { env } from '@/lib/env';
 import { scheduleTimeout } from './scheduleTimeout';
 

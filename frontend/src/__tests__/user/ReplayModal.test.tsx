@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import ReplayModal from '@/app/components/user/ReplayModal';
+import ReplayModal from '@/components/user/replay-modal';
 import { fetchHandReplay } from '@/lib/api/replay';
 import type { HandReplayResponse } from '@shared/types';
 

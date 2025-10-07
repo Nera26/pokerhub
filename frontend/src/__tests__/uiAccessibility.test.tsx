@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Button } from '../app/components/ui/Button';
-import Modal from '../app/components/ui/Modal';
-import Tooltip from '../app/components/ui/Tooltip';
-import ToastNotification from '../app/components/ui/ToastNotification';
+import { Button } from '../app/components/ui/button';
+import Modal from '../app/components/ui/modal';
+import Tooltip from '../app/components/ui/tooltip';
+import ToastNotification from '../app/components/ui/toast-notification';
 
 describe('UI accessibility', () => {
   it('supports icon-only Button with aria-label', () => {
@@ -28,7 +28,7 @@ describe('UI accessibility', () => {
   });
 
   it('Tooltip links trigger and tooltip via aria-describedby', () => {
-    render(<Tooltip text="More info">trigger</Tooltip>);
+    render(<Tooltip text="More info">trigger</tooltip>);
     const trigger = screen.getByText('trigger');
     fireEvent.focus(trigger);
     const tip = screen.getByRole('tooltip');

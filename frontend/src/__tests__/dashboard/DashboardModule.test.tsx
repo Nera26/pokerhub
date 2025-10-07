@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import DashboardModule from '@/app/components/dashboard/DashboardModule';
+import DashboardModule from '@/components/dashboard/dashboard-module';
 import { logger } from '@/lib/logger';
 
 describe('DashboardModule', () => {

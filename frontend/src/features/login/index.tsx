@@ -1,6 +1,6 @@
 'use client';
 
-import LoginForm from '@/app/components/auth/LoginForm';
+import LoginForm from '@/components/auth/login-form';
 import AuthSimplePage from '@/features/auth/AuthSimplePage';
 
 export const dynamic = 'force-dynamic';

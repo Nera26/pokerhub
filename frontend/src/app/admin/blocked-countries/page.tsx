@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import AdminCrudPage, {
   type AdminCrudField,
   type AdminCrudItemsRenderProps,
-} from '@/app/components/dashboard/common/AdminCrudPage';
+} from '@/components/dashboard/common/admin-crud-page';
 import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import {
   fetchBlockedCountries,

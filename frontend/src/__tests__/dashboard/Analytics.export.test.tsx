@@ -1,7 +1,7 @@
 import { mockUseActivity } from '@/test-utils/mockActivity';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Analytics from '@/app/components/dashboard/analytics/Analytics';
+import Analytics from '@/components/dashboard/analytics/analytics';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import useToasts from '@/hooks/useToasts';
@@ -21,34 +21,34 @@ jest.mock('@/lib/exportCsv', () => ({
 }));
 
 jest.mock(
-  '@/app/components/dashboard/common/SearchInput',
+  '@/components/dashboard/common/search-input',
   () => (props: any) => <input {...props} />,
 );
 
-jest.mock('@/app/components/dashboard/analytics/SearchBar', () => () => (
+jest.mock('@/components/dashboard/analytics/search-bar', () => () => (
   <div />
 ));
-jest.mock('@/app/components/dashboard/analytics/QuickStats', () => () => (
+jest.mock('@/components/dashboard/analytics/quick-stats', () => () => (
   <div />
 ));
-jest.mock('@/app/components/dashboard/charts/ActivityChart', () => () => (
+jest.mock('@/components/dashboard/charts/activity-chart', () => () => (
   <div />
 ));
-jest.mock('@/app/components/dashboard/analytics/ErrorChart', () => () => (
+jest.mock('@/components/dashboard/analytics/error-chart', () => () => (
   <div />
 ));
-jest.mock('@/app/components/dashboard/analytics/AuditTable', () => () => (
+jest.mock('@/components/dashboard/analytics/audit-table', () => () => (
   <div />
 ));
-jest.mock('@/app/components/dashboard/analytics/SecurityAlerts', () => () => (
+jest.mock('@/components/dashboard/analytics/security-alerts', () => () => (
   <div />
 ));
 jest.mock(
-  '@/app/components/dashboard/analytics/AdvancedFilterModal',
+  '@/components/dashboard/analytics/advanced-filter-modal',
   () => () => null,
 );
-jest.mock('@/app/components/dashboard/analytics/DetailModal', () => () => null);
-jest.mock('@/app/components/ui/ToastNotification', () => () => null);
+jest.mock('@/components/dashboard/analytics/detail-modal', () => () => null);
+jest.mock('@/components/ui/toast-notification', () => () => null);
 
 describe('Analytics CSV export', () => {
   beforeEach(() => {

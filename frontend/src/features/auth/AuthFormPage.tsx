@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import AuthPageLayout from '@/app/components/auth/AuthPageLayout';
+import AuthPageLayout from '@/components/auth/auth-page-layout';
 
 export interface AuthFormPageProps {
   title: string;

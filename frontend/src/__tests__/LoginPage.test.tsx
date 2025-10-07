@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from '@/features/login';
 import { fetchAuthProviders } from '@/lib/api/auth';
 
-jest.mock('@/app/components/auth/LoginForm', () => () => <div>Login Form</div>);
+jest.mock('@/components/auth/login-form', () => () => <div>Login Form</div>);
 jest.mock('@/lib/api/auth', () => ({
   ...jest.requireActual('@/lib/api/auth'),
   fetchAuthProviders: jest.fn(),

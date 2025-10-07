@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import Button from './components/ui/Button';
+import Button from './components/ui/button';
 import { env } from '@/lib/env';
 import useOffline from '@/hooks/useOffline';
 

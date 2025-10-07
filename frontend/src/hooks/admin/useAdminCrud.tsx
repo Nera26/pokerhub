@@ -14,7 +14,7 @@ import { ZodError } from 'zod';
 import { useTranslations } from '@/hooks/useTranslations';
 import AdminTableManager, {
   type AdminTableManagerProps,
-} from '@/app/components/dashboard/common/AdminTableManager';
+} from '@/components/dashboard/common/admin-table-manager';
 import {
   useCrudState,
   type CrudMutationConfig,

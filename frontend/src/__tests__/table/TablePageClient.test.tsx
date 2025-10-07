@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import TablePageClient from '@/app/table/[id]/TablePageClient';
+import TablePageClient from '@/app/table/[id]/tablePageClient';
 import { useTableData } from '@/hooks/useTableData';
 import { useApiError } from '@/hooks/useApiError';
 import useSocket from '@/hooks/useSocket';
@@ -11,7 +11,7 @@ jest.mock('next/dynamic', () => {
   const dynamic = () => () => null;
   return dynamic;
 });
-jest.mock('@/components/FairnessModal', () => () => null);
+jest.mock('@/components/fairness-modal', () => () => null);
 
 const mockUseTableData = useTableData as jest.MockedFunction<
   typeof useTableData

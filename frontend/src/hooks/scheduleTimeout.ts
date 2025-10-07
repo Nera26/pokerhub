@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { Message } from '@/app/components/common/chat/types';
+import type { Message } from '@/components/common/chat/types';
 
 export function scheduleTimeout(
   queryClient: QueryClient,

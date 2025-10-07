@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import GameTabs from '@/app/components/home/GameTabs';
+import GameTabs from '@/components/home/game-tabs';
 import type { ResponseLike } from '@/lib/api/client';
 
 describe('GameTabs', () => {

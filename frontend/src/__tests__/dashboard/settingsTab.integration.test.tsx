@@ -32,7 +32,7 @@ jest.mock('@/lib/api/nav', () => ({
   fetchNavItems: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock('@/app/components/dashboard/Sidebar', () => () => <div>Sidebar</div>);
+jest.mock('@/components/dashboard/sidebar', () => () => <div>Sidebar</div>);
 
 jest.mock('@/hooks/useChipDenominations');
 jest.mock('@/lib/api/config');
@@ -60,7 +60,7 @@ describe('settings tab integration', () => {
       {
         id: 'settings',
         title: 'Settings',
-        component: '@/app/components/dashboard/Settings',
+        component: '@/components/dashboard/settings',
         source: 'config',
         icon: 'faCog',
       },

@@ -7,16 +7,16 @@ import {
   useQueryClient,
   useIsFetching,
 } from '@tanstack/react-query';
-import ProfileSection from '../components/user/ProfileSection';
-import GameStatistics from '../components/user/GameStatistics';
-import HistoryTabs from '../components/user/HistoryTabs';
-import HistoryList from '../components/user/HistoryList';
-import FilterDropdown from '../components/user/FilterDropdown';
-import EditProfileModal from '../components/user/EditProfileModal';
-import LogoutModal from '../components/user/LogoutModal';
-import ReplayModal from '../components/user/ReplayModal';
-import BracketModal from '../components/user/BracketModal';
-import { Button } from '../components/ui/Button';
+import ProfileSection from '@/components/user/profile-section';
+import GameStatistics from '@/components/user/game-statistics';
+import HistoryTabs from '@/components/user/history-tabs';
+import HistoryList from '@/components/user/history-list';
+import FilterDropdown from '@/components/user/filter-dropdown';
+import EditProfileModal from '@/components/user/edit-profile-modal';
+import LogoutModal from '@/components/user/logout-modal';
+import ReplayModal from '@/components/user/replay-modal';
+import BracketModal from '@/components/user/bracket-modal';
+import { Button } from '@/components/ui/button';
 import { fetchProfile, fetchStats, updateProfile } from '@/lib/api/profile';
 import type { GameFilter, ProfitLossFilter } from '@/types/filters';
 import type { ProfileStatsResponse, UserProfile } from '@shared/types';

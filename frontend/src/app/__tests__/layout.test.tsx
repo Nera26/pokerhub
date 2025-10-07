@@ -7,23 +7,23 @@ jest.mock('../ReactQueryProvider', () => ({
   __esModule: true,
   default: ({ children }: any) => <>{children}</>,
 }));
-jest.mock('../components/ui/ErrorBoundary', () => ({
+jest.mock('@/components/ui/error-boundary', () => ({
   __esModule: true,
   default: ({ children }: any) => <>{children}</>,
 }));
-jest.mock('../components/ui/ErrorFallback', () => ({
+jest.mock('@/components/ui/error-fallback', () => ({
   __esModule: true,
   default: () => null,
 }));
 jest.mock('@/hooks/useApiError', () => ({
   ApiErrorProvider: ({ children }: any) => <>{children}</>,
 }));
-jest.mock('@/context/AuthContext', () => ({
+jest.mock('@/stores/auth-context', () => ({
   AuthProvider: ({ children }: any) => <>{children}</>,
 }));
 jest.mock('../ServiceWorker', () => () => null);
-jest.mock('../components/common/LanguageSelector', () => () => null);
-jest.mock('@/components/ContractMismatchNotice', () => () => null);
+jest.mock('@/components/common/language-selector', () => () => null);
+jest.mock('@/components/contract-mismatch-notice', () => () => null);
 jest.mock('@/lib/metadata', () => ({
   buildMetadata: async () => ({
     title: '',

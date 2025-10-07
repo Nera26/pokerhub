@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Header from '@/app/components/common/header/Header';
+import Header from '@/components/common/header/header';
 import type { ResponseLike } from '@/lib/api/client';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider } from '@/stores/auth-context';
 
 describe('header notifications accessibility', () => {
   const originalFetch = global.fetch;

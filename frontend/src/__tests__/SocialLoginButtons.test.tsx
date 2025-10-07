@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import SocialLoginButtons from '@/app/components/auth/SocialLoginButtons';
+import SocialLoginButtons from '@/components/auth/social-login-buttons';
 import { faGoogle, faFacebookF } from '@fortawesome/free-brands-svg-icons';
 import { useQuery } from '@tanstack/react-query';
 

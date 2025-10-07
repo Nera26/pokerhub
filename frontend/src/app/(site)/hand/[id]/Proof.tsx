@@ -1,7 +1,7 @@
 import { fetchHandProof } from '@/lib/api/hands';
 import { verifyProof } from '@shared/verify';
 import ProofDownloadButton from './ProofDownloadButton';
-import ProofDetails from '@/components/hand/ProofDetails';
+import ProofDetails from '@/components/hand/proof-details';
 
 export default async function Proof({ handId }: { handId: string }) {
   const proof = await fetchHandProof(handId);

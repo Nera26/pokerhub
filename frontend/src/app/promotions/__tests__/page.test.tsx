@@ -23,7 +23,7 @@ jest.mock('@/hooks/useToasts', () => ({
 }));
 
 jest.mock(
-  '../../components/promotions/PromotionCard',
+  '@/components/promotions/promotion-card',
   () =>
     ({ promotion }: any) => (
       <div>

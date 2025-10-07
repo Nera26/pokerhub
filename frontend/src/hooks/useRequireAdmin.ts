@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthToken } from '@/app/store/authStore';
+import { useAuthToken } from '@/stores/auth-store';
 
 export function useRequireAdmin(): void {
   const router = useRouter();

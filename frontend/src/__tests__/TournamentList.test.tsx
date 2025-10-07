@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import TournamentList from '@/components/TournamentList';
+import TournamentList from '@/components/tournament-list';
 import type { Tournament } from '@/hooks/useLobbyData';
 
 describe('TournamentList', () => {

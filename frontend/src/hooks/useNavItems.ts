@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/stores/auth-context';
 import { useNotifications } from './notifications';
 import { fetchNavItems, type NavItem } from '@/lib/api/nav';
 

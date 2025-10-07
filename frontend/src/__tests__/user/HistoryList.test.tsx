@@ -2,8 +2,8 @@ import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import HistoryList from '@/app/components/user/HistoryList';
-import ReplayModal from '@/app/components/user/ReplayModal';
+import HistoryList from '@/components/user/history-list';
+import ReplayModal from '@/components/user/replay-modal';
 import {
   fetchGameHistory,
   fetchTournamentHistory,
@@ -13,7 +13,7 @@ import {
   type TransactionEntry,
 } from '@/lib/api/history';
 import { fetchHandReplay } from '@/lib/api/replay';
-import { mockMetadataFetch } from '@/app/components/common/__tests__/helpers';
+import { mockMetadataFetch } from '@/components/common/__tests__/helpers';
 
 jest.mock('@/lib/api/history');
 jest.mock('@/lib/api/replay');
@@ -112,7 +112,7 @@ const historyCases: HistoryCase[] = [
     type: 'game-history',
     fetchMock: fetchGameHistoryMock,
     successData: gameHistoryEntries,
-    successText: /Table #1/,
+    successText: /table #1/,
     emptyText: 'No game history found.',
     errorText: 'fail',
   },

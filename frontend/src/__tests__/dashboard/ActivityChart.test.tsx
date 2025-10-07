@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import ActivityChart from '@/app/components/dashboard/charts/ActivityChart';
+import ActivityChart from '@/components/dashboard/charts/activity-chart';
 
 const chartMock = jest.fn((..._args: unknown[]) => ({ destroy: jest.fn() }));
 jest.mock('chart.js/auto', () => ({

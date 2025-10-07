@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import GameStatistics from '@/app/components/user/GameStatistics';
+import GameStatistics from '@/components/user/game-statistics';
 
 describe('GameStatistics', () => {
   it('renders provided stats', () => {

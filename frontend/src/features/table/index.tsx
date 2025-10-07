@@ -1,14 +1,14 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import ErrorBoundary from '@/app/components/ui/ErrorBoundary';
+import ErrorBoundary from '@/components/ui/error-boundary';
 import { useTables, type Table } from '@/hooks/useLobbyData';
 import useVirtualizedList from '@/hooks/useVirtualizedList';
-import SkeletonGrid from '@/app/components/common/SkeletonGrid';
+import SkeletonGrid from '@/components/common/skeleton-grid';
 
 const LiveTableCard = dynamic(
-  () => import('@/app/components/home/LiveTableCard'),
+  () => import('@/components/home/live-table-card'),
   {
     loading: () => (
       <div
@@ -29,6 +29,32 @@ export default function TablePage() {
     }
     return chunked;
   }, [tables]);
+
+  const tableErrorFallback = useMemo(
+    () => (
+      <div className="rounded-2xl bg-card-bg h-48 flex items-center justify-center">
+        Error loading table.
+      </div>
+    ),
+    [],
+  );
+
+  const renderTableCard = useCallback(
+    (table: Table) => (
+      <ErrorBoundary key={table.id} fallback={tableErrorFallback}>
+        <LiveTableCard
+          tableName={table.tableName}
+          stakes={table.stakes}
+          players={table.players}
+          buyIn={table.buyIn}
+          stats={table.stats}
+          createdAgo={table.createdAgo}
+          href={`/table/${table.id}`}
+        />
+      </ErrorBoundary>
+    ),
+    [tableErrorFallback],
+  );
 
   const parentRef = useRef<HTMLDivElement>(null);
   const isVirtualized = tables.length >= 20;
@@ -81,52 +107,14 @@ export default function TablePage() {
                   }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4"
                 >
-                  {rowTables.map((table) => (
-                    <ErrorBoundary
-                      key={table.id}
-                      fallback={
-                        <div className="rounded-2xl bg-card-bg h-48 flex items-center justify-center">
-                          Error loading table.
-                        </div>
-                      }
-                    >
-                      <LiveTableCard
-                        tableName={table.tableName}
-                        stakes={table.stakes}
-                        players={table.players}
-                        buyIn={table.buyIn}
-                        stats={table.stats}
-                        createdAgo={table.createdAgo}
-                        href={`/table/${table.id}`}
-                      />
-                    </ErrorBoundary>
-                  ))}
+                  {rowTables.map(renderTableCard)}
                 </div>
               );
             })}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {tables.map((table) => (
-              <ErrorBoundary
-                key={table.id}
-                fallback={
-                  <div className="rounded-2xl bg-card-bg h-48 flex items-center justify-center">
-                    Error loading table.
-                  </div>
-                }
-              >
-                <LiveTableCard
-                  tableName={table.tableName}
-                  stakes={table.stakes}
-                  players={table.players}
-                  buyIn={table.buyIn}
-                  stats={table.stats}
-                  createdAgo={table.createdAgo}
-                  href={`/table/${table.id}`}
-                />
-              </ErrorBoundary>
-            ))}
+            {tables.map(renderTableCard)}
           </div>
         )}
       </div>

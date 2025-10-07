@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import ErrorBoundary from '../app/components/ui/ErrorBoundary';
-import ErrorFallback from '../app/components/ui/ErrorFallback';
+import ErrorBoundary from '../app/components/ui/error-boundary';
+import ErrorFallback from '../app/components/ui/error-fallback';
 import type { JSX } from 'react';
 
 function Bomb(): JSX.Element {

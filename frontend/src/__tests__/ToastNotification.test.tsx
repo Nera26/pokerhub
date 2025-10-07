@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import ToastNotification from '@/app/components/ui/ToastNotification';
+import ToastNotification from '@/components/ui/toast-notification';
 
 describe('ToastNotification', () => {
   it('renders message and auto-closes after duration', async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import SkeletonSection from '@/app/components/common/SkeletonSection';
+import SkeletonSection from '@/components/common/skeleton-section';
 import { useHandState } from '@/hooks/useHandState';
 import { useParams, useSearchParams } from 'next/navigation';
 

@@ -52,7 +52,7 @@ describe('Admin tabs page', () => {
     await user.type(screen.getByLabelText('Title'), 'Audit');
     await user.type(
       screen.getByLabelText('Component'),
-      '@/app/components/dashboard/Audit',
+      '@/components/dashboard/audit',
     );
 
     await user.click(screen.getByRole('button', { name: 'Create tab' }));
@@ -70,7 +70,7 @@ describe('Admin tabs page', () => {
         {
           id: 'reports',
           title: 'Reports',
-          component: '@/app/components/dashboard/Reports',
+          component: '@/components/dashboard/reports',
           icon: 'faChartLine',
         },
       ] as AdminTab[])

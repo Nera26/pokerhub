@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import NotificationItem from '@/app/components/notifications/NotificationItem';
+import NotificationItem from '@/components/notifications/notification-item';
 
 describe('NotificationItem', () => {
   const notification = {

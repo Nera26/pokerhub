@@ -1,9 +1,9 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import LoginForm from '@/app/components/auth/LoginForm';
+import LoginForm from '@/components/auth/login-form';
 import { useRouter } from 'next/navigation';
-import { useAuthActions } from '@/app/store/authStore';
+import { useAuthActions } from '@/stores/auth-store';
 import { login, type ApiError } from '@/lib/api/auth';
 
 type UseAuthActions = typeof useAuthActions;
@@ -12,7 +12,7 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }));
 
-jest.mock('@/app/store/authStore', () => ({
+jest.mock('@/stores/auth-store', () => ({
   useAuthActions: jest.fn(),
 }));
 

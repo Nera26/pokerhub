@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import HistoryTabs from '@/app/components/user/HistoryTabs';
+import HistoryTabs from '@/components/user/history-tabs';
 import type { ResponseLike } from '@/lib/api/client';
 
 function mockTabs(tabs: Array<{ key: string; label: string }>) {

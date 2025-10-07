@@ -64,7 +64,7 @@ jest.mock('@/hooks/admin', () => ({
 }));
 
 jest.mock(
-  '@/app/components/dashboard/Sidebar',
+  '@/components/dashboard/sidebar',
   () => () => React.createElement('div'),
 );
 

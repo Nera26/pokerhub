@@ -1,5 +1,5 @@
 import { render, within } from '@testing-library/react';
-import HomeLoadingSkeleton from '@/app/components/home/HomeLoadingSkeleton';
+import HomeLoadingSkeleton from '@/components/home/home-loading-skeleton';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import { useGameTypes } from '@/hooks/useGameTypes';
 

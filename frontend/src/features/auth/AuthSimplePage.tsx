@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import AuthFormPage from '@/features/auth/AuthFormPage';
-import SocialLoginButtons from '@/app/components/auth/SocialLoginButtons';
+import SocialLoginButtons from '@/components/auth/social-login-buttons';
 
 export interface AuthSimplePageProps {
   title: string;

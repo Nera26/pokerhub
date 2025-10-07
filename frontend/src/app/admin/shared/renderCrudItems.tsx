@@ -1,6 +1,6 @@
 import type { Key, ReactNode } from 'react';
 
-import type { AdminCrudItemsRenderProps } from '@/app/components/dashboard/common/AdminCrudPage';
+import type { AdminCrudItemsRenderProps } from '@/components/dashboard/common/admin-crud-page';
 
 type ItemContext<TIdentifier extends Key> = {
   submitting: boolean;

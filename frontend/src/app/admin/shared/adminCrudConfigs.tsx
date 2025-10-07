@@ -1,7 +1,7 @@
 import {
   type AdminCrudField,
   type AdminCrudFormViewConfig,
-} from '@/app/components/dashboard/common/AdminCrudPage';
+} from '@/components/dashboard/common/admin-crud-page';
 import { CrudItemList } from './renderCrudItems';
 import {
   fetchNavItems,
@@ -205,7 +205,7 @@ const TAB_FIELDS: AdminCrudField<AdminTabFormState>[] = [
   {
     name: 'component',
     label: 'Component',
-    placeholder: '@/app/components/dashboard/AdminAnalytics',
+    placeholder: '@/components/dashboard/analytics/analytics',
     wrapperClassName: 'flex flex-col text-sm font-medium',
     inputClassName: 'mt-1 rounded border border-gray-300 px-3 py-2',
   },

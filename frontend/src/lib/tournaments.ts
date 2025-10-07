@@ -1,6 +1,6 @@
 import type { components } from '@contracts/api';
 import type { Tournament } from '@shared/types';
-import type { TournamentStatus } from '@/app/components/tournaments/TournamentCard';
+import type { TournamentStatus } from '@/components/tournaments/tournament-card';
 
 const statusMap: Record<
   components['schemas']['Tournament']['state'],

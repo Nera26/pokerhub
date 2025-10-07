@@ -1,6 +1,6 @@
 'use client';
 
-import ForgotPasswordForm from '@/app/components/auth/ForgotPasswordForm';
+import ForgotPasswordForm from '@/components/auth/forgot-password-form';
 import AuthSimplePage from '@/features/auth/AuthSimplePage';
 
 export const dynamic = 'force-dynamic';

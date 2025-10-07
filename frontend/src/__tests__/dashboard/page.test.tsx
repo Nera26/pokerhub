@@ -12,7 +12,7 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => searchParams,
 }));
 
-jest.mock('@/app/components/dashboard/DashboardModule', () => ({
+jest.mock('@/components/dashboard/dashboard-module', () => ({
   __esModule: true,
   default: () => null,
 }));
@@ -57,17 +57,17 @@ jest.mock('@tanstack/react-query', () => ({
       {
         id: 'dashboard',
         title: 'Dashboard',
-        component: '@/app/components/dashboard/DashboardModule',
+        component: '@/components/dashboard/dashboard-module',
       },
       {
         id: 'users',
         title: 'Manage Users',
-        component: '@/app/components/dashboard/DashboardModule',
+        component: '@/components/dashboard/dashboard-module',
       },
       {
         id: 'analytics',
         title: 'Analytics',
-        component: '@/app/components/dashboard/DashboardModule',
+        component: '@/components/dashboard/dashboard-module',
       },
     ],
     isLoading: false,

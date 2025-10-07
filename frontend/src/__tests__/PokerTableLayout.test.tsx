@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PokerTableLayout from '@/app/components/tables/PokerTableLayout';
-import type { Player } from '@/app/components/tables/types';
+import PokerTableLayout from '@/components/tables/poker-table-layout';
+import type { Player } from '@/components/tables/types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/hooks/useChipDenominations', () => ({

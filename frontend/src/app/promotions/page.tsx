@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import PromotionCard, {
   type Promotion,
-} from '@/app/components/promotions/PromotionCard';
-import PromotionDetailModalContent from '@/app/components/promotions/PromotionDetailModalContent';
-import Modal from '@/app/components/ui/Modal';
-import ToastNotification from '@/app/components/ui/ToastNotification';
+} from '@/components/promotions/promotion-card';
+import PromotionDetailModalContent from '@/components/promotions/promotion-detail-modal-content';
+import Modal from '@/components/ui/modal';
+import ToastNotification from '@/components/ui/toast-notification';
 import { usePromotions } from '@/hooks/usePromotions';
 import { claimPromotion } from '@/lib/api/promotions';
 import useToasts from '@/hooks/useToasts';

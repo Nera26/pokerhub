@@ -1,4 +1,4 @@
-import SkeletonSection from '@/app/components/common/SkeletonSection';
+import SkeletonSection from '@/components/common/skeleton-section';
 
 export default function Loading() {
   return (

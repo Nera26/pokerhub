@@ -9,11 +9,11 @@ import { useTranslations } from '@/hooks/useTranslations';
 import {
   type TransactionHistoryFilterQuery,
   type TransactionHistoryQueryResultMap,
-} from '@/app/components/common/TransactionHistoryControls';
+} from '@/components/common/transaction-history-controls';
 import {
   buildSelectOptions,
   type SelectOption,
-} from '@/app/components/common/TransactionHistoryFilters';
+} from '@/components/common/transaction-history-filters';
 
 type PlayersQuery = TransactionHistoryFilterQuery<
   'players',

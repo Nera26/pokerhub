@@ -11,7 +11,7 @@ import {
   getActionHistory,
   applyAction,
 } from '@/lib/api/collusion';
-import { useAuthToken } from '@/app/store/authStore';
+import { useAuthToken } from '@/stores/auth-store';
 import type {
   FlaggedSession,
   ReviewAction,

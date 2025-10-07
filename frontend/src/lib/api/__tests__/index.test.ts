@@ -5,7 +5,7 @@ describe('api client', () => {
   it('propagates auth token in headers', async () => {
     jest.resetModules();
     process.env.NEXT_PUBLIC_BASE_URL = 'http://example.com';
-    const { useAuthStore } = await import('@/app/store/authStore');
+    const { useAuthStore } = await import('@/stores/auth-store');
     useAuthStore.setState({ token: 'secret' } as any);
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,

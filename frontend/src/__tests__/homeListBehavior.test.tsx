@@ -3,10 +3,10 @@ import { render, screen, within } from '@testing-library/react';
 import { HomePageClient } from '@/app/(site)/HomePageClient';
 import CashGameList, {
   type CashGameListProps,
-} from '@/app/components/home/CashGameList';
+} from '@/components/home/cash-game-list';
 import TournamentList, {
   type TournamentListProps,
-} from '@/components/TournamentList';
+} from '@/components/tournament-list';
 import { useTables, useTournaments, useCTAs } from '@/hooks/useLobbyData';
 import type { Table } from '@/hooks/useLobbyData';
 import type { TournamentWithBreak } from './utils/homeClient';

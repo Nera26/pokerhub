@@ -8,17 +8,17 @@ import {
   fetchTournamentDetails,
   type Tournament as ApiTournament,
 } from '@/lib/api/lobby';
-import Header from '@/app/components/common/Header';
-import BottomNav from '@/app/components/common/BottomNav';
+import Header from '@/components/common/header';
+import BottomNav from '@/components/common/bottom-nav';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { TournamentFilter } from '@/app/components/tournaments/TournamentFilters';
-import ErrorBoundary from '@/app/components/ui/ErrorBoundary';
-import TournamentFilters from '@/app/components/tournaments/TournamentFilters';
-import TournamentRegisterModalContent from '@/app/components/tournaments/TournamentRegisterModalContent';
-import Modal from '@/app/components/ui/Modal';
-import ToastNotification from '@/app/components/ui/ToastNotification';
+import type { TournamentFilter } from '@/components/tournaments/tournament-filters';
+import ErrorBoundary from '@/components/ui/error-boundary';
+import TournamentFilters from '@/components/tournaments/tournament-filters';
+import TournamentRegisterModalContent from '@/components/tournaments/tournament-register-modal-content';
+import Modal from '@/components/ui/modal';
+import ToastNotification from '@/components/ui/toast-notification';
 
-import TournamentList from '@/components/TournamentList';
+import TournamentList from '@/components/tournament-list';
 import { mapApiTournament } from '@/lib/tournaments';
 
 function isTournamentFilter(v: string | null): v is TournamentFilter {

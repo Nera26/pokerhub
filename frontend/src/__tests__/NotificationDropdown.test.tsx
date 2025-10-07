@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import NotificationDropdown from '@/app/components/common/header/NotificationDropdown';
+import NotificationDropdown from '@/components/common/header/notification-dropdown';
 import axe from 'axe-core';
 
 describe('NotificationDropdown', () => {

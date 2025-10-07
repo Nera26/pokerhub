@@ -141,14 +141,14 @@ describe('UserPage', () => {
     ];
     (fetchGameHistory as jest.Mock).mockResolvedValue(data);
     renderPage();
-    expect(await screen.findByText(/Table #1/)).toBeInTheDocument();
-    expect(screen.getByText(/Table #2/)).toBeInTheDocument();
+    expect(await screen.findByText(/table #1/)).toBeInTheDocument();
+    expect(screen.getByText(/table #2/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Filters' }));
     await user.selectOptions(screen.getAllByRole('combobox')[1], 'win');
     await user.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() =>
-      expect(screen.queryByText(/Table #2/)).not.toBeInTheDocument(),
+      expect(screen.queryByText(/table #2/)).not.toBeInTheDocument(),
     );
-    expect(screen.getByText(/Table #1/)).toBeInTheDocument();
+    expect(screen.getByText(/table #1/)).toBeInTheDocument();
   });
 });

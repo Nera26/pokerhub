@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import BonusForm from '@/app/components/dashboard/forms/BonusForm';
-import type { BonusFormValues } from '@/app/components/dashboard/BonusManager';
+import BonusForm from '@/components/dashboard/forms/bonus-form';
+import type { BonusFormValues } from '@/components/dashboard/bonus-manager';
 
 jest.mock('@tanstack/react-query', () => ({ useQuery: jest.fn() }));
 
